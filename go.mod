@@ -3,11 +3,9 @@ module github.com/kralamoure/d1login
 go 1.14
 
 require (
-	github.com/alexedwards/argon2id v0.0.0-20200522061839-9369edc04b05
 	github.com/kralamoure/d1 v0.0.0-20200621003907-f4165804f92e
 	github.com/kralamoure/d1postgres v0.0.0-20200621011438-9253ccbff59d
 	github.com/kralamoure/d1proto v0.0.0-20200621072541-4ae7bb7f87c4
-	github.com/o1egl/paseto v1.0.0
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/pflag v1.0.5
 	go.uber.org/zap v1.15.0
