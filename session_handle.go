@@ -8,6 +8,32 @@ import (
 	"github.com/kralamoure/d1proto/msgsvr"
 )
 
+func (s *session) login() error {
+	if s.version.Major != 1 || s.version.Minor < 29 {
+		err := s.sendMsg(msgsvr.AccountLoginError{
+			Reason: enum.AccountLoginErrorReason.BadVersion,
+			Extra:  "^1.29.0",
+		})
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if s.credential.CryptoMethod != 1 {
+		return fmt.Errorf("unhandled crypto method: %d", s.credential.CryptoMethod)
+	}
+
+	password, err := decryptedPassword(s.credential.Hash, s.salt)
+	if err != nil {
+		return err
+	}
+	s.svr.logger.Debug(password)
+
+	s.status.Store(statusIdle)
+	return nil
+}
+
 func (s *session) handleAccountVersion(m msgcli.AccountVersion) error {
 	/*sess.Version = m
 	sess.SetStatus(d1login.SessionStatusExpectingCredential)*/
@@ -124,33 +150,13 @@ func (s *session) handleAccountQueuePosition(m msgcli.AccountQueuePosition) erro
 	}
 
 	if s.status.Load() == statusExpectingQueuePosition {
-		if s.version.Major != 1 || s.version.Minor < 29 {
-			err := s.sendMsg(msgsvr.AccountLoginError{
-				Reason: enum.AccountLoginErrorReason.BadVersion,
-				Extra:  "^1.29.0",
-			})
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-
-		if s.credential.CryptoMethod != 1 {
-			return fmt.Errorf("unhandled crypto method: %d", s.credential.CryptoMethod)
-		}
-
-		password, err := decryptedPassword(s.credential.Hash, s.salt)
-		if err != nil {
-			return err
-		}
-		s.svr.logger.Debug(password)
-		s.status.Store(statusIdle)
+		return s.login()
 	}
 
 	return nil
 }
 
-func (s *session) handleAccountSearchForFriend(extra string) error {
+func (s *session) handleAccountSearchForFriend(m msgcli.AccountSearchForFriend) error {
 	/*user, err := s.Login.User(filter.UserNicknameEQ(typ.Nickname(msg.Pseudo)))
 	if err != nil {
 		if errors.Is(err, d1.ErrResourceNotFound) {
@@ -194,7 +200,7 @@ func (s *session) handleAccountSearchForFriend(extra string) error {
 	return nil
 }
 
-func (s *session) AccountGetServersList(extra string) error {
+func (s *session) AccountGetServersList(m msgcli.AccountGetServersList) error {
 	/*account, err := s.Login.Account(filter.AccountIdEQ(sess.AccountId))
 	if err != nil {
 		return err
@@ -229,7 +235,7 @@ func (s *session) AccountGetServersList(extra string) error {
 	return nil
 }
 
-func (s *session) AccountSetServer(extra string) error {
+func (s *session) AccountSetServer(m msgcli.AccountSetServer) error {
 	/*gameserver, err := s.Login.GameServer(filter.GameServerIdEQ(msg.Id))
 	if err != nil {
 		return err
