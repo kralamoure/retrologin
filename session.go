@@ -12,13 +12,13 @@ import (
 	"go.uber.org/zap"
 )
 
-type Session struct {
+type session struct {
 	svr  *Server
 	conn *net.TCPConn
 	salt string
 }
 
-func (s *Session) receivePkts(ctx context.Context) error {
+func (s *session) receivePkts(ctx context.Context) error {
 	rd := bufio.NewReader(s.conn)
 	for {
 		pkt, err := rd.ReadString('\x00')
@@ -36,7 +36,7 @@ func (s *Session) receivePkts(ctx context.Context) error {
 	}
 }
 
-func (s *Session) handlePkt(ctx context.Context, pkt string) error {
+func (s *session) handlePkt(ctx context.Context, pkt string) error {
 	id, ok := d1proto.MsgCliIdByPkt(pkt)
 	name, _ := d1proto.MsgCliNameByID(id)
 	s.svr.logger.Info("received packet from client",
@@ -60,7 +60,7 @@ func (s *Session) handlePkt(ctx context.Context, pkt string) error {
 	return nil
 }
 
-func (s *Session) sendMsg(msg d1proto.MsgSvr) error {
+func (s *session) sendMsg(msg d1proto.MsgSvr) error {
 	pkt, err := msg.Serialized()
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func (s *Session) sendMsg(msg d1proto.MsgSvr) error {
 	return nil
 }
 
-func (s *Session) sendPkt(pkt string) {
+func (s *session) sendPkt(pkt string) {
 	id, _ := d1proto.MsgSvrIdByPkt(pkt)
 	name, _ := d1proto.MsgSvrNameByID(id)
 	s.svr.logger.Info("sent packet to client",

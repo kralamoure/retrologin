@@ -1,6 +1,6 @@
 package d1login
 
-func (s *Session) handleAccountVersion(extra string) error {
+func (s *session) handleAccountVersion(extra string) error {
 	/*sess.Version = msg
 	sess.SetStatus(d1login.SessionStatusExpectingCredential)*/
 	s.svr.logger.Info(extra)
@@ -8,14 +8,14 @@ func (s *Session) handleAccountVersion(extra string) error {
 	return nil
 }
 
-func (s *Session) handleAccountCredential(extra string) error {
+func (s *session) handleAccountCredential(extra string) error {
 	/*sess.Credential = msg
 	sess.SetStatus(d1login.SessionStatusExpectingFirstQueuePosition)*/
 
 	return nil
 }
 
-func (s *Session) handleAccountQueuePosition(extra string) error {
+func (s *session) handleAccountQueuePosition(extra string) error {
 	/*s.SendPacketMsg(sess.conn, &msgsvr.AccountNewQueue{
 		Position:    1,
 		TotalAbo:    0,
@@ -104,7 +104,7 @@ func (s *Session) handleAccountQueuePosition(extra string) error {
 	return nil
 }
 
-func (s *Session) handleAccountSearchForFriend(extra string) error {
+func (s *session) handleAccountSearchForFriend(extra string) error {
 	/*user, err := s.Login.User(filter.UserNicknameEQ(typ.Nickname(msg.Pseudo)))
 	if err != nil {
 		if errors.Is(err, d1.ErrResourceNotFound) {
@@ -148,7 +148,7 @@ func (s *Session) handleAccountSearchForFriend(extra string) error {
 	return nil
 }
 
-func (s *Session) AccountGetServersList(extra string) error {
+func (s *session) AccountGetServersList(extra string) error {
 	/*account, err := s.Login.Account(filter.AccountIdEQ(sess.AccountId))
 	if err != nil {
 		return err
@@ -183,7 +183,7 @@ func (s *Session) AccountGetServersList(extra string) error {
 	return nil
 }
 
-func (s *Session) AccountSetServer(extra string) error {
+func (s *session) AccountSetServer(extra string) error {
 	/*gameserver, err := s.Login.GameServer(filter.GameServerIdEQ(msg.Id))
 	if err != nil {
 		return err

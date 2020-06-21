@@ -18,7 +18,7 @@ type Server struct {
 	repo   d1.Repository
 
 	ln       *net.TCPListener
-	sessions map[*Session]struct{}
+	sessions map[*session]struct{}
 	mu       sync.Mutex
 }
 
@@ -105,7 +105,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 		return err
 	}
 
-	sess := &Session{
+	sess := &session{
 		svr:  s,
 		conn: conn,
 		salt: salt,
@@ -141,12 +141,12 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	}
 }
 
-func (s *Server) trackSession(sess *Session, add bool) {
+func (s *Server) trackSession(sess *session, add bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if add {
 		if s.sessions == nil {
-			s.sessions = make(map[*Session]struct{})
+			s.sessions = make(map[*session]struct{})
 		}
 		s.sessions[sess] = struct{}{}
 	} else {
