@@ -30,51 +30,53 @@ var (
 var logger *zap.Logger
 
 func main() {
-	os.Exit(run())
-}
-
-func run() int {
 	err := loadVars()
 	if err != nil {
 		if errors.Is(err, pflag.ErrHelp) {
-			return 0
+			return
 		}
 		log.Println(err)
-		return 2
+		os.Exit(2)
 	}
 
 	if printVersion {
 		fmt.Println(version)
-		return 0
+		return
 	}
 
 	if debug {
-		traceFile, err := os.Create("trace.out")
-		if err != nil {
-			log.Println(err)
-			return 1
-		}
-		defer traceFile.Close()
-		err = trace.Start(traceFile)
-		if err != nil {
-			log.Println(err)
-			return 1
-		}
-		defer trace.Stop()
-
 		logger, err = zap.NewDevelopment()
 		if err != nil {
-			log.Println(err)
-			return 1
+			log.Fatalln(err)
 		}
 	} else {
 		logger, err = zap.NewProduction()
 		if err != nil {
-			log.Println(err)
-			return 1
+			log.Fatalln(err)
 		}
 	}
+
+	err = run()
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+}
+
+func run() error {
 	defer logger.Sync()
+
+	if debug {
+		traceFile, err := os.Create("trace.out")
+		if err != nil {
+			return err
+		}
+		defer traceFile.Close()
+		err = trace.Start(traceFile)
+		if err != nil {
+			return err
+		}
+		defer trace.Stop()
+	}
 
 	var wg sync.WaitGroup
 	defer wg.Wait()
@@ -90,8 +92,7 @@ func run() int {
 
 	repo, err := d1postgres.NewDB(ctx, pgConnString)
 	if err != nil {
-		log.Println(err)
-		return 1
+		return err
 	}
 
 	svr, err := d1login.NewServer(d1login.ServerConfig{
@@ -100,8 +101,7 @@ func run() int {
 		Logger: logger.Named("server"),
 	})
 	if err != nil {
-		logger.Error("could not make login server", zap.Error(err))
-		return 1
+		return err
 	}
 	wg.Add(1)
 	go func() {
@@ -122,10 +122,10 @@ func run() int {
 		)
 	case err := <-errCh:
 		logger.Error(err.Error())
-		return 1
+		return err
 	case <-ctx.Done():
 	}
-	return 0
+	return nil
 }
 
 func loadVars() error {
