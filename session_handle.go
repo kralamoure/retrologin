@@ -1,14 +1,18 @@
 package d1login
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/alexedwards/argon2id"
+	"github.com/kralamoure/d1/filter"
+	"github.com/kralamoure/d1/typ"
 	"github.com/kralamoure/d1proto/enum"
 	"github.com/kralamoure/d1proto/msgcli"
 	"github.com/kralamoure/d1proto/msgsvr"
 )
 
-func (s *session) login() error {
+func (s *session) login(ctx context.Context) error {
 	/*var badVersion bool
 	if sess.Version.Major != 1 || sess.Version.Minor < 29 {
 		badVersion = true
@@ -85,13 +89,10 @@ func (s *session) login() error {
 	sess.SetStatus(d1login.SessionStatusIdle)*/
 
 	if s.version.Major != 1 || s.version.Minor < 29 {
-		err := s.sendMsg(msgsvr.AccountLoginError{
+		s.sendMsg(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.BadVersion,
 			Extra:  "^1.29.0",
 		})
-		if err != nil {
-			return err
-		}
 		return nil
 	}
 
@@ -103,7 +104,31 @@ func (s *session) login() error {
 	if err != nil {
 		return err
 	}
-	s.svr.logger.Debug(password)
+
+	account, err := s.svr.svc.Account(ctx, filter.AccountNameEQ(typ.AccountName(s.credential.Username)))
+	if err != nil {
+		s.sendMsg(msgsvr.AccountLoginError{
+			Reason: enum.AccountLoginErrorReason.AccessDenied,
+		})
+		return err
+	}
+
+	user, err := s.Login.User(filter.UserIdEQ(account.UserId))
+	if err != nil {
+		return err
+	}
+
+	match, err := argon2id.ComparePasswordAndHash(password, string(user.Hash))
+	if err != nil {
+		return err
+	}
+
+	if !match {
+		s.SendPacketMsg(sess.conn, &msgsvr.AccountLoginError{
+			Reason: enum.AccountLoginErrorReason.AccessDenied,
+		})
+		return errors.New("wrong password")
+	}
 
 	s.status.Store(statusIdle)
 	return nil
@@ -127,20 +152,17 @@ func (s *session) handleAccountCredential(m msgcli.AccountCredential) error {
 	return nil
 }
 
-func (s *session) handleAccountQueuePosition(m msgcli.AccountQueuePosition) error {
-	err := s.sendMsg(msgsvr.AccountNewQueue{
+func (s *session) handleAccountQueuePosition(ctx context.Context, m msgcli.AccountQueuePosition) error {
+	s.sendMsg(msgsvr.AccountNewQueue{
 		Position:    1,
 		TotalAbo:    0,
 		TotalNonAbo: 1,
 		Subscriber:  false,
 		QueueId:     0,
 	})
-	if err != nil {
-		return err
-	}
 
 	if s.status.Load() == statusExpectingQueuePosition {
-		return s.login()
+		return s.login(ctx)
 	}
 
 	return nil

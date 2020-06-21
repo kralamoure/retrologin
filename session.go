@@ -92,15 +92,42 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 		if err != nil {
 			return err
 		}
-		err = s.handleAccountQueuePosition(msg)
+		err = s.handleAccountQueuePosition(ctx, msg)
+		if err != nil {
+			return err
+		}
+	case d1proto.AccountSearchForFriend:
+		msg := msgcli.AccountSearchForFriend{}
+		err := msg.Deserialize(extra)
+		if err != nil {
+			return err
+		}
+		err = s.handleAccountSearchForFriend(msg)
+		if err != nil {
+			return err
+		}
+	case d1proto.AccountGetServersList:
+		msg := msgcli.AccountGetServersList{}
+		err := msg.Deserialize(extra)
+		if err != nil {
+			return err
+		}
+		err = s.AccountGetServersList(msg)
+		if err != nil {
+			return err
+		}
+	case d1proto.AccountSetServer:
+		msg := msgcli.AccountSetServer{}
+		err := msg.Deserialize(extra)
+		if err != nil {
+			return err
+		}
+		err = s.AccountSetServer(msg)
 		if err != nil {
 			return err
 		}
 	default:
-		err := s.sendMsg(msgsvr.BasicsNoticed{})
-		if err != nil {
-			return err
-		}
+		s.sendMsg(msgsvr.BasicsNoticed{})
 	}
 
 	return nil
