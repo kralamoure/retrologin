@@ -1,21 +1,32 @@
 package d1login
 
-func (s *session) handleAccountVersion(extra string) error {
-	/*sess.Version = msg
-	sess.SetStatus(d1login.SessionStatusExpectingCredential)*/
-	s.svr.logger.Info(extra)
+import (
+	"fmt"
 
+	"github.com/kralamoure/d1proto/enum"
+	"github.com/kralamoure/d1proto/msgcli"
+	"github.com/kralamoure/d1proto/msgsvr"
+)
+
+func (s *session) handleAccountVersion(m msgcli.AccountVersion) error {
+	/*sess.Version = m
+	sess.SetStatus(d1login.SessionStatusExpectingCredential)*/
+
+	s.version = m
+	s.status.Store(statusExpectingCredential)
 	return nil
 }
 
-func (s *session) handleAccountCredential(extra string) error {
-	/*sess.Credential = msg
+func (s *session) handleAccountCredential(m msgcli.AccountCredential) error {
+	/*sess.Credential = m
 	sess.SetStatus(d1login.SessionStatusExpectingFirstQueuePosition)*/
 
+	s.credential = m
+	s.status.Store(statusExpectingQueuePosition)
 	return nil
 }
 
-func (s *session) handleAccountQueuePosition(extra string) error {
+func (s *session) handleAccountQueuePosition(m msgcli.AccountQueuePosition) error {
 	/*s.SendPacketMsg(sess.conn, &msgsvr.AccountNewQueue{
 		Position:    1,
 		TotalAbo:    0,
@@ -100,6 +111,41 @@ func (s *session) handleAccountQueuePosition(extra string) error {
 
 		sess.SetStatus(d1login.SessionStatusIdle)
 	}*/
+
+	err := s.sendMsg(msgsvr.AccountNewQueue{
+		Position:    1,
+		TotalAbo:    0,
+		TotalNonAbo: 1,
+		Subscriber:  false,
+		QueueId:     0,
+	})
+	if err != nil {
+		return err
+	}
+
+	if s.status.Load() == statusExpectingQueuePosition {
+		if s.version.Major != 1 || s.version.Minor < 29 {
+			err := s.sendMsg(msgsvr.AccountLoginError{
+				Reason: enum.AccountLoginErrorReason.BadVersion,
+				Extra:  "^1.29.0",
+			})
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+		if s.credential.CryptoMethod != 1 {
+			return fmt.Errorf("unhandled crypto method: %d", s.credential.CryptoMethod)
+		}
+
+		password, err := decryptedPassword(s.credential.Hash, s.salt)
+		if err != nil {
+			return err
+		}
+		s.svr.logger.Debug(password)
+		s.status.Store(statusIdle)
+	}
 
 	return nil
 }

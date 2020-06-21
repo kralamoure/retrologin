@@ -8,6 +8,7 @@ require (
 	github.com/kralamoure/d1proto v0.0.0-20200621072541-4ae7bb7f87c4
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/pflag v1.0.5
+	go.uber.org/atomic v1.6.0
 	go.uber.org/zap v1.15.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/mod v0.3.0 // indirect

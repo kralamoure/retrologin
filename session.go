@@ -11,13 +11,25 @@ import (
 	"github.com/kralamoure/d1proto"
 	"github.com/kralamoure/d1proto/msgcli"
 	"github.com/kralamoure/d1proto/msgsvr"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
+const (
+	statusExpectingVersion uint32 = iota
+	statusExpectingCredential
+	statusExpectingQueuePosition
+	statusIdle
+)
+
 type session struct {
-	svr  *Server
-	conn *net.TCPConn
-	salt string
+	svr    *Server
+	conn   *net.TCPConn
+	salt   string
+	status atomic.Uint32
+
+	version    msgcli.AccountVersion
+	credential msgcli.AccountCredential
 }
 
 func (s *session) receivePkts(ctx context.Context) error {
@@ -53,17 +65,40 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 
 	switch id {
 	case d1proto.AccountVersion:
-		msg := &msgcli.AccountVersion{}
+		msg := msgcli.AccountVersion{}
 		err := msg.Deserialize(extra)
 		if err != nil {
 			return err
 		}
-		err = s.handleAccountVersion(extra)
+		err = s.handleAccountVersion(msg)
+		if err != nil {
+			return err
+		}
+	case d1proto.AccountCredential:
+		msg := msgcli.AccountCredential{}
+		err := msg.Deserialize(extra)
+		if err != nil {
+			return err
+		}
+		err = s.handleAccountCredential(msg)
+		if err != nil {
+			return err
+		}
+	case d1proto.AccountQueuePosition:
+		msg := msgcli.AccountQueuePosition{}
+		err := msg.Deserialize(extra)
+		if err != nil {
+			return err
+		}
+		err = s.handleAccountQueuePosition(msg)
 		if err != nil {
 			return err
 		}
 	default:
-		s.sendMsg(msgsvr.BasicsNoticed{})
+		err := s.sendMsg(msgsvr.BasicsNoticed{})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
