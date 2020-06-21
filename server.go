@@ -12,38 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
-type ServerConfig struct {
-	Addr   string
-	Repo   d1.Repository
-	Logger *zap.Logger
-}
-
 type Server struct {
 	logger *zap.Logger
 	addr   *net.TCPAddr
 	repo   d1.Repository
 
 	ln       *net.TCPListener
-	sessions map[*session]struct{}
+	sessions map[*Session]struct{}
 	mu       sync.Mutex
-}
-
-func NewServer(c ServerConfig) (*Server, error) {
-	if c.Repo == nil {
-		return nil, errors.New("repository should not be nil")
-	}
-	if c.Logger == nil {
-		c.Logger = zap.NewNop()
-	}
-	addr, err := net.ResolveTCPAddr("tcp4", c.Addr)
-	if err != nil {
-		return nil, err
-	}
-	s := &Server{
-		logger: c.Logger,
-		addr:   addr,
-	}
-	return s, nil
 }
 
 func (s *Server) ListenAndServe(ctx context.Context) error {
@@ -124,9 +100,15 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 		zap.String("client_address", conn.RemoteAddr().String()),
 	)
 
-	sess := &session{
+	salt, err := randomSalt(32)
+	if err != nil {
+		return err
+	}
+
+	sess := &Session{
 		svr:  s,
 		conn: conn,
+		Salt: salt,
 	}
 
 	s.trackSession(sess, true)
@@ -149,7 +131,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 		}
 	}()
 
-	sess.sendMsg(&msgsvr.AksHelloConnect{Salt: "abc123"})
+	sess.sendMsg(&msgsvr.AksHelloConnect{Salt: sess.Salt})
 
 	select {
 	case err := <-errCh:
@@ -159,12 +141,12 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	}
 }
 
-func (s *Server) trackSession(sess *session, add bool) {
+func (s *Server) trackSession(sess *Session, add bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if add {
 		if s.sessions == nil {
-			s.sessions = make(map[*session]struct{})
+			s.sessions = make(map[*Session]struct{})
 		}
 		s.sessions[sess] = struct{}{}
 	} else {

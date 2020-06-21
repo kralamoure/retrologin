@@ -95,7 +95,7 @@ func run() error {
 		return err
 	}
 
-	svr, err := d1login.NewServer(d1login.ServerConfig{
+	svr, err := d1login.NewServer(d1login.Config{
 		Addr:   addr,
 		Repo:   repo,
 		Logger: logger.Named("server"),

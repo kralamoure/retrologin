@@ -12,14 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
-type session struct {
-	svr  *Server
-	conn *net.TCPConn
+type Session struct {
+	logger zap.Logger
+	svr    *Server
+	conn   *net.TCPConn
+	Salt   string
 }
 
-var errEndOfService = errors.New("end of service")
-
-func (s *session) receivePkts(ctx context.Context) error {
+func (s *Session) receivePkts(ctx context.Context) error {
 	rd := bufio.NewReader(s.conn)
 	for {
 		pkt, err := rd.ReadString('\x00')
@@ -37,18 +37,31 @@ func (s *session) receivePkts(ctx context.Context) error {
 	}
 }
 
-func (s *session) handlePkt(ctx context.Context, pkt string) error {
-	id, _ := d1proto.MsgCliIdByPkt(pkt)
+func (s *Session) handlePkt(ctx context.Context, pkt string) error {
+	id, ok := d1proto.MsgCliIdByPkt(pkt)
 	name, _ := d1proto.MsgCliNameByID(id)
-	s.svr.logger.Info("received packet from client",
+	s.logger.Info("received packet from client",
 		zap.String("client_address", s.conn.RemoteAddr().String()),
 		zap.String("message_name", name),
 		zap.String("packet", pkt),
 	)
+	if !ok {
+		return errors.New("unknown packet")
+	}
+	extra := strings.TrimPrefix(pkt, string(id))
+	var err error
+	switch id {
+	case d1proto.AccountVersion:
+		err = s.handleAccountVersion(extra)
+	}
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (s *session) sendMsg(msg d1proto.MsgSvr) error {
+func (s *Session) sendMsg(msg d1proto.MsgSvr) error {
 	pkt, err := msg.Serialized()
 	if err != nil {
 		return err
@@ -57,7 +70,7 @@ func (s *session) sendMsg(msg d1proto.MsgSvr) error {
 	return nil
 }
 
-func (s *session) sendPkt(pkt string) {
+func (s *Session) sendPkt(pkt string) {
 	id, _ := d1proto.MsgSvrIdByPkt(pkt)
 	name, _ := d1proto.MsgSvrNameByID(id)
 	s.svr.logger.Info("sent packet to client",
