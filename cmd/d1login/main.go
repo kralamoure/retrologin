@@ -23,7 +23,7 @@ const version = "v0.0.0"
 var (
 	printVersion bool
 	debug        bool
-	loginAddr    string
+	addr         string
 	pgConnString string
 )
 
@@ -95,7 +95,7 @@ func run() int {
 	}
 
 	svr, err := d1login.NewServer(d1login.ServerConfig{
-		Addr:   loginAddr,
+		Addr:   addr,
 		Repo:   repo,
 		Logger: logger.Named("server"),
 	})
@@ -132,7 +132,7 @@ func loadVars() error {
 	flags := pflag.NewFlagSet("d1login", pflag.ContinueOnError)
 	flags.BoolVarP(&printVersion, "version", "v", false, "Print version")
 	flags.BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
-	flags.StringVarP(&loginAddr, "login", "l", "0.0.0.0:5555", "login server listener address")
+	flags.StringVarP(&addr, "address", "a", "0.0.0.0:5555", "server listener's address")
 	flags.StringVarP(&pgConnString, "postgres", "p", "postgresql://user:password@host/database", "PostgreSQL connection string")
 	flags.SortFlags = false
 	return flags.Parse(os.Args)

@@ -39,7 +39,8 @@ func NewServer(c ServerConfig) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
-		addr: addr,
+		logger: c.Logger,
+		addr:   addr,
 	}
 	return s, nil
 }
