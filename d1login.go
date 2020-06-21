@@ -4,19 +4,19 @@ import (
 	"errors"
 	"net"
 
-	"github.com/kralamoure/d1"
+	"github.com/kralamoure/d1/service/login"
 	"go.uber.org/zap"
 )
 
 type Config struct {
-	Addr   string
-	Repo   d1.Repo
-	Logger *zap.Logger
+	Addr    string
+	Service *login.Service
+	Logger  *zap.Logger
 }
 
 func NewServer(c Config) (*Server, error) {
-	if c.Repo == nil {
-		return nil, errors.New("nil repository")
+	if c.Service == nil {
+		return nil, errors.New("nil service")
 	}
 	if c.Logger == nil {
 		c.Logger = zap.NewNop()
@@ -28,7 +28,7 @@ func NewServer(c Config) (*Server, error) {
 	s := &Server{
 		logger: c.Logger,
 		addr:   addr,
-		repo:   c.Repo,
+		svc:    c.Service,
 	}
 	return s, nil
 }

@@ -11,6 +11,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/kralamoure/d1/service/login"
 	"github.com/kralamoure/d1postgres"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
@@ -90,15 +91,23 @@ func run() error {
 
 	errCh := make(chan error)
 
-	repo, err := d1postgres.NewDB(ctx, pgConnString)
+	db, err := d1postgres.NewDB(ctx, pgConnString)
+	if err != nil {
+		return err
+	}
+
+	svc, err := login.NewService(login.Config{
+		Repo:   db,
+		Logger: logger.Named("service"),
+	})
 	if err != nil {
 		return err
 	}
 
 	svr, err := d1login.NewServer(d1login.Config{
-		Addr:   addr,
-		Repo:   repo,
-		Logger: logger.Named("server"),
+		Addr:    addr,
+		Service: svc,
+		Logger:  logger.Named("server"),
 	})
 	if err != nil {
 		return err

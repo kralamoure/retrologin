@@ -7,7 +7,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/kralamoure/d1"
+	"github.com/kralamoure/d1/service/login"
 	"github.com/kralamoure/d1proto/msgsvr"
 	"go.uber.org/zap"
 )
@@ -15,7 +15,7 @@ import (
 type Server struct {
 	logger *zap.Logger
 	addr   *net.TCPAddr
-	repo   d1.Repo
+	svc    *login.Service
 
 	ln       *net.TCPListener
 	sessions map[*session]struct{}
