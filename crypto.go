@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func DecryptedPassword(encryptedPassword, key string) (string, error) {
+func decryptedPassword(encryptedPassword, key string) (string, error) {
 	if key == "" {
 		return "", errors.New("key is empty")
 	}
@@ -54,7 +54,7 @@ func DecryptedPassword(encryptedPassword, key string) (string, error) {
 	return sb.String(), nil
 }
 
-func RandomSalt(n int) (string, error) {
+func randomSalt(n int) (string, error) {
 	const charset = "abcdefghijklmnopqrstuvwxyz"
 
 	p, err := randomBytes(n)

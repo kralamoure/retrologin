@@ -43,7 +43,7 @@ func AccountQueuePosition(s *d1login.Server, sess *d1login.Session, msg msgcli.A
 			return fmt.Errorf("unhandled crypto method: %d", sess.Credential.CryptoMethod)
 		}
 
-		password, err := d1login.DecryptedPassword(sess.Credential.Hash, sess.Salt)
+		password, err := d1login.decryptedPassword(sess.Credential.Hash, sess.Salt)
 		if err != nil {
 			return err
 		}

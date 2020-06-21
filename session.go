@@ -1,59 +1,69 @@
 package d1login
 
 import (
+	"bufio"
+	"context"
+	"errors"
+	"fmt"
 	"net"
-	"sync"
-	"time"
+	"strings"
 
-	"github.com/kralamoure/d1proto/msgcli"
+	"github.com/kralamoure/d1proto"
+	"go.uber.org/zap"
 )
 
-const (
-	SessionStatusExpectingVersion SessionStatus = iota
-	SessionStatusExpectingCredential
-	SessionStatusExpectingFirstQueuePosition
-	SessionStatusIdle
-)
-
-type SessionStatus int
-
-type Session struct {
-	Conn       *net.TCPConn
-	Salt       string
-	PktCh      chan QueuePacket
-	Version    msgcli.AccountVersion
-	Credential msgcli.AccountCredential
-	AccountId  int
-	LastAccess time.Time
-	LastIP     string
-
-	mu     sync.Mutex
-	status SessionStatus
+type session struct {
+	svr  *Server
+	conn *net.TCPConn
 }
 
-func NewSession(conn *net.TCPConn) (*Session, error) {
-	salt, err := RandomSalt(32)
-	if err != nil {
-		return nil, err
+var errEndOfService = errors.New("end of service")
+
+func (s *session) receivePkts(ctx context.Context) error {
+	rd := bufio.NewReader(s.conn)
+	for {
+		pkt, err := rd.ReadString('\x00')
+		if err != nil {
+			return err
+		}
+		pkt = strings.TrimSuffix(pkt, "\n\x00")
+		if pkt == "" {
+			continue
+		}
+		err = s.handlePkt(ctx, pkt)
+		if err != nil {
+			return err
+		}
 	}
-
-	return &Session{
-		Conn:  conn,
-		PktCh: make(chan QueuePacket),
-		Salt:  salt,
-	}, nil
 }
 
-func (s *Session) Status() SessionStatus {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	return s.status
+func (s *session) handlePkt(ctx context.Context, pkt string) error {
+	id, _ := d1proto.MsgCliIdByPkt(pkt)
+	name, _ := d1proto.MsgCliNameByID(id)
+	s.svr.logger.Info("received packet from client",
+		zap.String("client_address", s.conn.RemoteAddr().String()),
+		zap.String("message_name", name),
+		zap.String("packet", pkt),
+	)
+	return nil
 }
 
-func (s *Session) SetStatus(status SessionStatus) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *session) sendMsg(msg d1proto.MsgSvr) error {
+	pkt, err := msg.Serialized()
+	if err != nil {
+		return err
+	}
+	s.sendPkt(fmt.Sprint(msg.ProtocolId(), pkt))
+	return nil
+}
 
-	s.status = status
+func (s *session) sendPkt(pkt string) {
+	id, _ := d1proto.MsgSvrIdByPkt(pkt)
+	name, _ := d1proto.MsgSvrNameByID(id)
+	s.svr.logger.Info("sent packet to client",
+		zap.String("client_address", s.conn.RemoteAddr().String()),
+		zap.String("message_name", name),
+		zap.String("packet", pkt),
+	)
+	fmt.Fprint(s.conn, pkt+"\x00")
 }

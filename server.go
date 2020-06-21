@@ -1,150 +1,169 @@
 package d1login
 
 import (
-	"fmt"
-	"sort"
+	"context"
+	"errors"
+	"io"
+	"net"
 	"sync"
-	"time"
 
-	"github.com/kralamoure/d1/service/login"
-	"github.com/kralamoure/d1proto/msgsvr"
-	"github.com/kralamoure/d1proto/typ"
-	"github.com/o1egl/paseto"
+	"github.com/kralamoure/d1"
 	"go.uber.org/zap"
 )
 
+type ServerConfig struct {
+	Addr   string
+	Repo   d1.Repository
+	Logger *zap.Logger
+}
+
 type Server struct {
-	Logger    *zap.SugaredLogger
-	Login     login.Service
-	sharedKey []byte
+	logger *zap.Logger
+	addr   *net.TCPAddr
+	repo   d1.Repository
 
-	mu        sync.Mutex
-	hostsData string
-	sessions  map[*Session]struct{}
+	ln       *net.TCPListener
+	sessions map[*session]struct{}
+	mu       sync.Mutex
 }
 
-func NewServer(cfg Config) *Server {
-	svr := &Server{
-		Logger:    cfg.Logger,
-		Login:     cfg.Login,
-		sharedKey: cfg.SharedKey,
-
-		sessions: make(map[*Session]struct{}),
+func NewServer(c ServerConfig) (*Server, error) {
+	if c.Repo == nil {
+		return nil, errors.New("repository should not be nil")
 	}
-	return svr
+	if c.Logger == nil {
+		c.Logger = zap.NewNop()
+	}
+	addr, err := net.ResolveTCPAddr("tcp4", c.Addr)
+	if err != nil {
+		return nil, err
+	}
+	s := &Server{
+		addr: addr,
+	}
+	return s, nil
 }
 
-func (s *Server) HostsData() string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *Server) ListenAndServe(ctx context.Context) error {
+	var wg sync.WaitGroup
+	defer wg.Wait()
 
-	return s.hostsData
-}
-
-func (s *Server) SetHostsData(hosts string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.hostsData = hosts
-}
-
-func (s *Server) UpdateHostsData() error {
-	gameservers, err := s.Login.GameServers()
+	ln, err := net.ListenTCP("tcp4", s.addr)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		ln.Close()
+		s.logger.Info("stopped listening",
+			zap.String("address", ln.Addr().String()),
+		)
+	}()
+	s.logger.Info("listening",
+		zap.String("address", ln.Addr().String()),
+	)
+	s.ln = ln
 
-	var sli []typ.AccountHostsHost
-	for _, gameserver := range gameservers {
-		host := typ.AccountHostsHost{
-			Id:         gameserver.Id,
-			State:      int(gameserver.State),
-			Completion: int(gameserver.Completion),
-			CanLog:     true,
+	errCh := make(chan error)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := s.acceptLoop(ctx)
+		if err != nil {
+			select {
+			case errCh <- err:
+			case <-ctx.Done():
+			}
 		}
-		sli = append(sli, host)
-	}
-	sort.Slice(sli, func(i, j int) bool { return sli[i].Id < sli[j].Id })
+	}()
 
-	msg := msgsvr.AccountHosts{Value: sli}
-	hosts, err := msg.Serialized()
-	if err != nil {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-errCh:
 		return err
 	}
-
-	s.SetHostsData(hosts)
-
-	return nil
 }
 
-func (s *Server) DeleteSessionByAccountId(accountId int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *Server) acceptLoop(ctx context.Context) error {
+	var wg sync.WaitGroup
+	defer wg.Wait()
 
-	for sess := range s.sessions {
-		if sess.AccountId == accountId {
-			s.deleteSessionLocked(sess)
-			break
+	for {
+		conn, err := s.ln.AcceptTCP()
+		if err != nil {
+			return err
 		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := s.handleClientConn(ctx, conn)
+			if err != nil && !(errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) || errors.Is(err, errEndOfService)) {
+				s.logger.Debug("error while handling client connection",
+					zap.Error(err),
+					zap.String("client_address", conn.RemoteAddr().String()),
+				)
+			}
+		}()
 	}
 }
 
-func (s *Server) DeleteSession(sess *Session) {
+func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error {
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	defer func() {
+		conn.Close()
+		s.logger.Info("client disconnected",
+			zap.String("client_address", conn.RemoteAddr().String()),
+		)
+	}()
+	s.logger.Info("client connected",
+		zap.String("client_address", conn.RemoteAddr().String()),
+	)
+
+	sess := &session{
+		svr:  s,
+		conn: conn,
+	}
+
+	s.trackSession(sess, true)
+	defer s.trackSession(sess, false)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	errCh := make(chan error)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := sess.receivePkts(ctx)
+		if err != nil {
+			select {
+			case errCh <- err:
+			case <-ctx.Done():
+			}
+		}
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (s *Server) trackSession(sess *session, add bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	sess.Conn.Close()
-	_, ok := s.sessions[sess]
-	if !ok {
-		return
+	if add {
+		if s.sessions == nil {
+			s.sessions = make(map[*session]struct{})
+		}
+		s.sessions[sess] = struct{}{}
+	} else {
+		delete(s.sessions, sess)
 	}
-	delete(s.sessions, sess)
-	s.Logger.Debugw("deleted session",
-		"address", sess.Conn.RemoteAddr(),
-	)
-}
-
-func (s *Server) deleteSessionLocked(sess *Session) {
-	sess.Conn.Close()
-	_, ok := s.sessions[sess]
-	if !ok {
-		return
-	}
-	delete(s.sessions, sess)
-	s.Logger.Debugw("deleted session",
-		"address", sess.Conn.RemoteAddr(),
-	)
-}
-
-func (s *Server) AddSession(sess *Session) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.sessions[sess] = struct{}{}
-	s.Logger.Debugw("added session",
-		"address", sess.Conn.RemoteAddr(),
-	)
-}
-
-func (s *Server) Sessions() map[*Session]struct{} {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	return s.sessions
-}
-
-func (s *Server) TokenData(accountId, gameserverId int, lastAccess time.Time, lastIP string) (string, error) {
-	now := time.Now()
-	token := paseto.JSONToken{
-		Subject:    fmt.Sprint(accountId),
-		Expiration: now.Add(5 * time.Second),
-	}
-	token.Set("serverId", fmt.Sprintf("%d", gameserverId))
-	token.Set("lastAccess", fmt.Sprintf("%d", lastAccess.Unix()))
-	token.Set("lastIP", lastIP)
-
-	data, err := paseto.NewV2().Encrypt(s.sharedKey, token, nil)
-	if err != nil {
-		return "", err
-	}
-
-	return data, nil
 }
