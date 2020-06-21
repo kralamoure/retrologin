@@ -2,6 +2,7 @@ package d1login
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/alexedwards/argon2id"
@@ -113,7 +114,7 @@ func (s *session) login(ctx context.Context) error {
 		return err
 	}
 
-	user, err := s.Login.User(filter.UserIdEQ(account.UserId))
+	user, err := s.svr.svc.User(ctx, filter.UserIdEQ(account.UserId))
 	if err != nil {
 		return err
 	}
@@ -124,7 +125,7 @@ func (s *session) login(ctx context.Context) error {
 	}
 
 	if !match {
-		s.SendPacketMsg(sess.conn, &msgsvr.AccountLoginError{
+		s.sendMsg(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AccessDenied,
 		})
 		return errors.New("wrong password")
