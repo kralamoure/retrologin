@@ -3,7 +3,7 @@ module github.com/kralamoure/d1login
 go 1.14
 
 require (
-	github.com/kralamoure/d1 v0.0.0-20200621003907-f4165804f92e
+	github.com/kralamoure/d1 v0.0.0-20200621225036-6a66214bd301
 	github.com/kralamoure/d1postgres v0.0.0-20200621011438-9253ccbff59d
 	github.com/kralamoure/d1proto v0.0.0-20200621072541-4ae7bb7f87c4
 	github.com/pkg/errors v0.9.1 // indirect
@@ -15,3 +15,9 @@ require (
 	golang.org/x/tools v0.0.0-20200519015757-0d0afa43d58a // indirect
 	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
 )
+
+replace github.com/kralamoure/d1 => ../d1
+
+replace github.com/kralamoure/d1postgres => ../d1postgres
+
+replace github.com/kralamoure/d1proto => ../d1proto

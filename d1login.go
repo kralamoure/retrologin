@@ -10,7 +10,7 @@ import (
 
 type Config struct {
 	Addr   string
-	Repo   d1.Repository
+	Repo   d1.Repo
 	Logger *zap.Logger
 }
 

@@ -15,7 +15,7 @@ import (
 type Server struct {
 	logger *zap.Logger
 	addr   *net.TCPAddr
-	repo   d1.Repository
+	repo   d1.Repo
 
 	ln       *net.TCPListener
 	sessions map[*session]struct{}
