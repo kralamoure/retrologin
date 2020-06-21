@@ -22,6 +22,8 @@ const (
 	statusIdle
 )
 
+var errEndOfService = errors.New("end of service")
+
 type session struct {
 	svr    *Server
 	conn   *net.TCPConn
