@@ -131,7 +131,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 		}
 	}()
 
-	sess.sendMsg(&msgsvr.AksHelloConnect{Salt: sess.salt})
+	sess.sendMsg(msgsvr.AksHelloConnect{Salt: sess.salt})
 
 	select {
 	case err := <-errCh:

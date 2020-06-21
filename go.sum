@@ -88,6 +88,8 @@ github.com/kralamoure/d1postgres v0.0.0-20200621011438-9253ccbff59d h1:tMdAiuokY
 github.com/kralamoure/d1postgres v0.0.0-20200621011438-9253ccbff59d/go.mod h1:47DIdQh80092ReCyi7njlL4BIY8eX6FnaEtoeFfl3z0=
 github.com/kralamoure/d1proto v0.0.0-20200615174349-63f6d3dfff63 h1:P6RElXecFbdj0EipWVoNdWiUMrIYHlQZpHLo2U+h16M=
 github.com/kralamoure/d1proto v0.0.0-20200615174349-63f6d3dfff63/go.mod h1:c0AU6u1JK7jHGy0GjWqkyap6PhDc4sgh8JvzBYnRtGI=
+github.com/kralamoure/d1proto v0.0.0-20200621072541-4ae7bb7f87c4 h1:nXIjp+ciGD8je5qdK0uH5o609L23p7Lbzaf9gxDRGh0=
+github.com/kralamoure/d1proto v0.0.0-20200621072541-4ae7bb7f87c4/go.mod h1:c0AU6u1JK7jHGy0GjWqkyap6PhDc4sgh8JvzBYnRtGI=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.1.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.2.0 h1:LXpIM/LZ5xGFhOpXAQUIMM1HdyqzVYM13zNdjCEEcA0=

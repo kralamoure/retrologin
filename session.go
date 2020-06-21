@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/kralamoure/d1proto"
+	"github.com/kralamoure/d1proto/msgcli"
+	"github.com/kralamoure/d1proto/msgsvr"
 	"go.uber.org/zap"
 )
 
@@ -48,13 +50,20 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 		return errors.New("unknown packet")
 	}
 	extra := strings.TrimPrefix(pkt, string(id))
-	var err error
+
 	switch id {
 	case d1proto.AccountVersion:
+		msg := &msgcli.AccountVersion{}
+		err := msg.Deserialize(extra)
+		if err != nil {
+			return err
+		}
 		err = s.handleAccountVersion(extra)
-	}
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+	default:
+		s.sendMsg(msgsvr.BasicsNoticed{})
 	}
 
 	return nil
