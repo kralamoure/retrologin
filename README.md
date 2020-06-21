@@ -12,13 +12,13 @@
 ```sh
 git clone https://github.com/kralamoure/d1login
 cd d1login
-go build
+go build ./cmd/...
 ```
 
 ## Installation
 
 ```sh
-go get github.com/kralamoure/d1login/cmd/d1login
+go get github.com/kralamoure/d1login/...
 ```
 
 ## Usage
