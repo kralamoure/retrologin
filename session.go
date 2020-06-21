@@ -15,7 +15,7 @@ import (
 type Session struct {
 	svr  *Server
 	conn *net.TCPConn
-	Salt string
+	salt string
 }
 
 func (s *Session) receivePkts(ctx context.Context) error {

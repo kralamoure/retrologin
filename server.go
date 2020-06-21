@@ -108,7 +108,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	sess := &Session{
 		svr:  s,
 		conn: conn,
-		Salt: salt,
+		salt: salt,
 	}
 
 	s.trackSession(sess, true)
@@ -131,7 +131,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 		}
 	}()
 
-	sess.sendMsg(&msgsvr.AksHelloConnect{Salt: sess.Salt})
+	sess.sendMsg(&msgsvr.AksHelloConnect{Salt: sess.salt})
 
 	select {
 	case err := <-errCh:

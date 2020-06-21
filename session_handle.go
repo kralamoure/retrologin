@@ -42,7 +42,7 @@ func (s *Session) handleAccountQueuePosition(extra string) error {
 			return fmt.Errorf("unhandled crypto method: %d", sess.Credential.CryptoMethod)
 		}
 
-		password, err := d1login.decryptedPassword(sess.Credential.Hash, sess.Salt)
+		password, err := d1login.decryptedPassword(sess.Credential.Hash, sess.salt)
 		if err != nil {
 			return err
 		}
