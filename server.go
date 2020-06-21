@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/kralamoure/d1"
+	"github.com/kralamoure/d1proto/msgsvr"
 	"go.uber.org/zap"
 )
 
@@ -147,6 +148,8 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 			}
 		}
 	}()
+
+	sess.sendMsg(&msgsvr.AksHelloConnect{Salt: "abc123"})
 
 	select {
 	case err := <-errCh:
