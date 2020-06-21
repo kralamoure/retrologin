@@ -3,7 +3,7 @@ package d1login
 func (s *Session) handleAccountVersion(extra string) error {
 	/*sess.Version = msg
 	sess.SetStatus(d1login.SessionStatusExpectingCredential)*/
-	s.logger.Info(extra)
+	s.svr.logger.Info(extra)
 
 	return nil
 }

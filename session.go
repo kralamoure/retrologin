@@ -13,10 +13,9 @@ import (
 )
 
 type Session struct {
-	logger zap.Logger
-	svr    *Server
-	conn   *net.TCPConn
-	Salt   string
+	svr  *Server
+	conn *net.TCPConn
+	Salt string
 }
 
 func (s *Session) receivePkts(ctx context.Context) error {
@@ -40,7 +39,7 @@ func (s *Session) receivePkts(ctx context.Context) error {
 func (s *Session) handlePkt(ctx context.Context, pkt string) error {
 	id, ok := d1proto.MsgCliIdByPkt(pkt)
 	name, _ := d1proto.MsgCliNameByID(id)
-	s.logger.Info("received packet from client",
+	s.svr.logger.Info("received packet from client",
 		zap.String("client_address", s.conn.RemoteAddr().String()),
 		zap.String("message_name", name),
 		zap.String("packet", pkt),
