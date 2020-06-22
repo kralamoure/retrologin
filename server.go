@@ -6,9 +6,11 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/kralamoure/d1/service/login"
 	"github.com/kralamoure/d1proto/msgsvr"
+	"github.com/kralamoure/d1proto/typ"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
@@ -45,6 +47,19 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	s.ln = ln
 
 	errCh := make(chan error)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := s.updateHostsDataLoop(ctx, 1*time.Second)
+		if err != nil {
+			select {
+			case errCh <- err:
+			case <-ctx.Done():
+			}
+		}
+	}()
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -154,5 +169,42 @@ func (s *Server) trackSession(sess *session, add bool) {
 		s.sessions[sess] = struct{}{}
 	} else {
 		delete(s.sessions, sess)
+	}
+}
+
+func (s *Server) updateHostsDataLoop(ctx context.Context, d time.Duration) error {
+	ticker := time.NewTicker(d)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			gameServers, err := s.svc.GameServers(ctx)
+			if err != nil {
+				return err
+			}
+
+			var sli []typ.AccountHostsHost
+			for _, gameServer := range gameServers {
+				host := typ.AccountHostsHost{
+					Id:         gameServer.Id,
+					State:      int(gameServer.State),
+					Completion: int(gameServer.Completion),
+					CanLog:     true,
+				}
+				sli = append(sli, host)
+			}
+			// sort.Slice(sli, func(i, j int) bool { return sli[i].Id < sli[j].Id })
+
+			msg := msgsvr.AccountHosts{Value: sli}
+			hosts, err := msg.Serialized()
+			if err != nil {
+				return err
+			}
+
+			s.hosts.Store(hosts)
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 }
