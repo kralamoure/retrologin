@@ -32,6 +32,11 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
+	err := s.updateHostsData(ctx)
+	if err != nil {
+		return err
+	}
+
 	ln, err := net.ListenTCP("tcp4", s.addr)
 	if err != nil {
 		return err
@@ -180,27 +185,35 @@ func (s *Server) updateHostsDataLoop(ctx context.Context, d time.Duration) error
 	for {
 		select {
 		case <-ticker.C:
-			gameServers, err := s.svc.GameServers(ctx)
+			err := s.updateHostsData(ctx)
 			if err != nil {
 				return err
 			}
-
-			var sli []typ.AccountHostsHost
-			for _, gameServer := range gameServers {
-				host := typ.AccountHostsHost{
-					Id:         gameServer.Id,
-					State:      int(gameServer.State),
-					Completion: int(gameServer.Completion),
-					CanLog:     true,
-				}
-				sli = append(sli, host)
-			}
-			sort.Slice(sli, func(i, j int) bool { return sli[i].Id < sli[j].Id })
-
-			m := msgsvr.AccountHosts{Value: sli}
-			s.hosts.Store(m)
 		case <-ctx.Done():
 			return ctx.Err()
 		}
 	}
+}
+
+func (s *Server) updateHostsData(ctx context.Context) error {
+	gameServers, err := s.svc.GameServers(ctx)
+	if err != nil {
+		return err
+	}
+
+	var sli []typ.AccountHostsHost
+	for _, gameServer := range gameServers {
+		host := typ.AccountHostsHost{
+			Id:         gameServer.Id,
+			State:      int(gameServer.State),
+			Completion: int(gameServer.Completion),
+			CanLog:     true,
+		}
+		sli = append(sli, host)
+	}
+	sort.Slice(sli, func(i, j int) bool { return sli[i].Id < sli[j].Id })
+
+	m := msgsvr.AccountHosts{Value: sli}
+	s.hosts.Store(m)
+	return nil
 }
