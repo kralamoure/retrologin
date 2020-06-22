@@ -61,7 +61,7 @@ func (s *session) receivePkts(ctx context.Context) error {
 func (s *session) handlePkt(ctx context.Context, pkt string) error {
 	id, ok := d1proto.MsgCliIdByPkt(pkt)
 	name, _ := d1proto.MsgCliNameByID(id)
-	s.svr.logger.Info("received packet from client",
+	s.svr.logger.Debug("received packet from client",
 		zap.String("client_address", s.conn.RemoteAddr().String()),
 		zap.String("message_name", name),
 		zap.String("packet", pkt),
@@ -154,7 +154,7 @@ func (s *session) sendMsg(msg d1proto.MsgSvr) {
 func (s *session) sendPkt(pkt string) {
 	id, _ := d1proto.MsgSvrIdByPkt(pkt)
 	name, _ := d1proto.MsgSvrNameByID(id)
-	s.svr.logger.Info("sent packet to client",
+	s.svr.logger.Debug("sent packet to client",
 		zap.String("client_address", s.conn.RemoteAddr().String()),
 		zap.String("message_name", name),
 		zap.String("packet", pkt),

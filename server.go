@@ -116,11 +116,11 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 
 	defer func() {
 		conn.Close()
-		s.logger.Info("client disconnected",
+		s.logger.Debug("client disconnected",
 			zap.String("client_address", conn.RemoteAddr().String()),
 		)
 	}()
-	s.logger.Info("client connected",
+	s.logger.Debug("client connected",
 		zap.String("client_address", conn.RemoteAddr().String()),
 	)
 
