@@ -192,10 +192,27 @@ func (s *Server) watchHosts(ctx context.Context, d time.Duration) error {
 			}
 			if hosts != s.hosts.Load() {
 				s.hosts.Store(hosts)
+				var m msgsvr.AccountHosts
+				err := m.Deserialize(hosts)
+				if err != nil {
+					return err
+				}
+				s.sendUpdatedHosts(m)
 			}
 		case <-ctx.Done():
 			return ctx.Err()
 		}
+	}
+}
+
+func (s *Server) sendUpdatedHosts(hosts msgsvr.AccountHosts) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for sess := range s.sessions {
+		if sess.status.Load() != statusIdle {
+			continue
+		}
+		sess.sendMsg(hosts)
 	}
 }
 
@@ -222,6 +239,5 @@ func (s *Server) fetchHosts(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	s.logger.Debug(hosts)
 	return hosts, nil
 }
