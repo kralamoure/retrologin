@@ -32,10 +32,11 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
-	err := s.updateHostsData(ctx)
+	hosts, err := s.fetchHosts(ctx)
 	if err != nil {
 		return err
 	}
+	s.hosts.Store(hosts)
 
 	ln, err := net.ListenTCP("tcp4", s.addr)
 	if err != nil {
@@ -57,7 +58,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := s.updateHostsDataLoop(ctx, 1*time.Second)
+		err := s.watchHosts(ctx, 1*time.Second)
 		if err != nil {
 			select {
 			case errCh <- err:
@@ -178,16 +179,19 @@ func (s *Server) trackSession(sess *session, add bool) {
 	}
 }
 
-func (s *Server) updateHostsDataLoop(ctx context.Context, d time.Duration) error {
+func (s *Server) watchHosts(ctx context.Context, d time.Duration) error {
 	ticker := time.NewTicker(d)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			err := s.updateHostsData(ctx)
+			hosts, err := s.fetchHosts(ctx)
 			if err != nil {
 				return err
+			}
+			if hosts != s.hosts.Load() {
+				s.hosts.Store(hosts)
 			}
 		case <-ctx.Done():
 			return ctx.Err()
@@ -195,10 +199,12 @@ func (s *Server) updateHostsDataLoop(ctx context.Context, d time.Duration) error
 	}
 }
 
-func (s *Server) updateHostsData(ctx context.Context) error {
+func (s *Server) fetchHosts(ctx context.Context) (string, error) {
+	m := msgsvr.AccountHosts{}
+
 	gameServers, err := s.svc.GameServers(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	var sli []typ.AccountHostsHost
@@ -213,11 +219,9 @@ func (s *Server) updateHostsData(ctx context.Context) error {
 	}
 	sort.Slice(sli, func(i, j int) bool { return sli[i].Id < sli[j].Id })
 
-	m := msgsvr.AccountHosts{Value: sli}
 	hosts, err := m.Serialized()
 	if err != nil {
-		return err
+		return "", err
 	}
-	s.hosts.Store(hosts)
-	return nil
+	return hosts, nil
 }
