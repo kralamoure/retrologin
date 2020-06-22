@@ -19,81 +19,6 @@ import (
 )
 
 func (s *session) login(ctx context.Context) error {
-	/*var badVersion bool
-	if sess.Version.Major != 1 || sess.Version.Minor < 29 {
-		badVersion = true
-	}
-
-	if badVersion {
-		s.SendPacketMsg(sess.conn, &msgsvr.AccountLoginError{
-			Reason: enum.AccountLoginErrorReason.BadVersion,
-			Extra:  "^1.29.0",
-		})
-		return nil
-	}
-
-	if sess.Credential.CryptoMethod != 1 {
-		return fmt.Errorf("unhandled crypto method: %d", sess.Credential.CryptoMethod)
-	}
-
-	password, err := d1login.decryptedPassword(sess.Credential.Hash, sess.salt)
-	if err != nil {
-		return err
-	}
-
-	account, err := s.Login.Account(filter.AccountNameEQ(typ.AccountName(sess.Credential.Username)))
-	if err != nil {
-		s.SendPacketMsg(sess.conn, &msgsvr.AccountLoginError{
-			Reason: enum.AccountLoginErrorReason.AccessDenied,
-		})
-		return err
-	}
-
-	user, err := s.Login.User(filter.UserIdEQ(account.UserId))
-	if err != nil {
-		return err
-	}
-
-	match, err := argon2id.ComparePasswordAndHash(password, string(user.Hash))
-	if err != nil {
-		return err
-	}
-
-	if !match {
-		s.SendPacketMsg(sess.conn, &msgsvr.AccountLoginError{
-			Reason: enum.AccountLoginErrorReason.AccessDenied,
-		})
-		return errors.New("wrong password")
-	}
-
-	sess.LastAccess = account.LastAccess
-	sess.LastIP = account.LastIP
-
-	ip, _, err := net.SplitHostPort(sess.conn.RemoteAddr().String())
-	if err != nil {
-		return err
-	}
-	s.Login.SetAccountLastAccessAndIP(account.Id, time.Now(), ip)
-
-	s.DeleteSessionByAccountId(account.Id)
-
-	sess.AccountId = account.Id
-
-	s.SendPacketMsg(sess.conn, &msgsvr.AccountPseudo{Value: string(user.Nickname)})
-	s.SendPacketMsg(sess.conn, &msgsvr.AccountCommunity{Id: int(user.Community)})
-
-	hosts := &msgsvr.AccountHosts{}
-	err = hosts.Deserialize(s.HostsData())
-	if err != nil {
-		return err
-	}
-	s.SendPacketMsg(sess.conn, hosts)
-
-	s.SendPacketMsg(sess.conn, &msgsvr.AccountLoginSuccess{Authorized: account.Admin})
-	s.SendPacketMsg(sess.conn, &msgsvr.AccountSecretQuestion{Value: "5 + 6"})
-
-	sess.SetStatus(d1login.SessionStatusIdle)*/
-
 	if s.version.Major != 1 || s.version.Minor < 29 {
 		s.sendMsg(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.BadVersion,
@@ -268,24 +193,22 @@ func (s *session) AccountGetServersList(ctx context.Context, m msgcli.AccountGet
 	return nil
 }
 
-func (s *session) AccountSetServer(m msgcli.AccountSetServer) error {
-	/*gameserver, err := s.Login.GameServer(filter.GameServerIdEQ(msg.Id))
+func (s *session) AccountSetServer(ctx context.Context, m msgcli.AccountSetServer) error {
+	gameServer, err := s.svr.svc.GameServer(ctx, filter.GameServerIdEQ(m.Id))
 	if err != nil {
 		return err
 	}
 
-	tokenData, err := s.TokenData(sess.AccountId, gameserver.Id, sess.LastAccess, sess.LastIP)
+	/*tokenData, err := s.TokenData(sess.AccountId, gameServer.Id, sess.LastAccess, sess.LastIP)
 	if err != nil {
 		return err
-	}
+	}*/
 
-	s.SendPacketMsg(sess.conn, &msgsvr.AccountSelectServerPlainSuccess{
-		Host:   gameserver.Host,
-		Port:   gameserver.Port,
-		Ticket: tokenData,
+	s.sendMsg(msgsvr.AccountSelectServerPlainSuccess{
+		Host:   gameServer.Host,
+		Port:   gameServer.Port,
+		Ticket: "ticket",
 	})
 
-	s.DeleteSession(sess)*/
-
-	return nil
+	return errEndOfService
 }

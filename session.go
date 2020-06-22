@@ -128,7 +128,7 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 		if err != nil {
 			return err
 		}
-		err = s.AccountSetServer(msg)
+		err = s.AccountSetServer(ctx, msg)
 		if err != nil {
 			return err
 		}
