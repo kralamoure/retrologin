@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/kralamoure/d1proto"
 	"github.com/kralamoure/d1proto/msgcli"
@@ -32,6 +33,11 @@ type session struct {
 
 	version    msgcli.AccountVersion
 	credential msgcli.AccountCredential
+
+	lastAccess time.Time
+	lastIP     string
+
+	accountId int
 }
 
 func (s *session) receivePkts(ctx context.Context) error {
@@ -112,7 +118,7 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 		if err != nil {
 			return err
 		}
-		err = s.AccountGetServersList(msg)
+		err = s.AccountGetServersList(ctx, msg)
 		if err != nil {
 			return err
 		}

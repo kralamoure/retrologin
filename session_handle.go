@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"sort"
+	"time"
 
 	"github.com/alexedwards/argon2id"
 	"github.com/kralamoure/d1/filter"
@@ -11,6 +14,7 @@ import (
 	"github.com/kralamoure/d1proto/enum"
 	"github.com/kralamoure/d1proto/msgcli"
 	"github.com/kralamoure/d1proto/msgsvr"
+	prototyp "github.com/kralamoure/d1proto/typ"
 )
 
 func (s *session) login(ctx context.Context) error {
@@ -131,6 +135,29 @@ func (s *session) login(ctx context.Context) error {
 		return errors.New("wrong password")
 	}
 
+	s.lastAccess = account.LastAccess
+	s.lastIP = account.LastIP
+
+	ip, _, err := net.SplitHostPort(s.conn.RemoteAddr().String())
+	if err != nil {
+		return err
+	}
+
+	err = s.svr.svc.SetAccountLastAccessAndIP(ctx, account.Id, time.Now(), ip)
+	if err != nil {
+		return err
+	}
+
+	s.accountId = account.Id
+
+	s.sendMsg(msgsvr.AccountPseudo{Value: string(user.Nickname)})
+	s.sendMsg(msgsvr.AccountCommunity{Id: int(user.Community)})
+
+	s.sendMsg(s.svr.hosts.Load().(msgsvr.AccountHosts))
+
+	s.sendMsg(msgsvr.AccountLoginSuccess{Authorized: account.Admin})
+	s.sendMsg(msgsvr.AccountSecretQuestion{Value: "5 + 6"})
+
 	s.status.Store(statusIdle)
 	return nil
 }
@@ -197,10 +224,10 @@ func (s *session) handleAccountSearchForFriend(m msgcli.AccountSearchForFriend) 
 		}
 	}
 
-	var serverCharacters []typ2.AccountServersListServerCharacters
+	var serverCharacters []prototyp.AccountServersListServerCharacters
 
 	for serverId, qty := range serverIdQty {
-		serverCharacters = append(serverCharacters, typ2.AccountServersListServerCharacters{
+		serverCharacters = append(serverCharacters, prototyp.AccountServersListServerCharacters{
 			Id:  serverId,
 			Qty: qty,
 		})
@@ -213,15 +240,15 @@ func (s *session) handleAccountSearchForFriend(m msgcli.AccountSearchForFriend) 
 	return nil
 }
 
-func (s *session) AccountGetServersList(m msgcli.AccountGetServersList) error {
-	/*account, err := s.Login.Account(filter.AccountIdEQ(sess.AccountId))
+func (s *session) AccountGetServersList(ctx context.Context, m msgcli.AccountGetServersList) error {
+	account, err := s.svr.svc.Account(ctx, filter.AccountIdEQ(s.accountId))
 	if err != nil {
 		return err
 	}
 
 	serverIdQty := make(map[int]int)
 
-	characters, err := s.Login.Characters(filter.CharacterAccountIdEQ(sess.AccountId))
+	characters, err := s.svr.svc.Characters(ctx, filter.CharacterAccountIdEQ(s.accountId))
 	if err != nil {
 		return err
 	}
@@ -229,10 +256,10 @@ func (s *session) AccountGetServersList(m msgcli.AccountGetServersList) error {
 		serverIdQty[character.GameServerId]++
 	}
 
-	var serverCharacters []typ2.AccountServersListServerCharacters
+	var serverCharacters []prototyp.AccountServersListServerCharacters
 
 	for serverId, qty := range serverIdQty {
-		serverCharacters = append(serverCharacters, typ2.AccountServersListServerCharacters{
+		serverCharacters = append(serverCharacters, prototyp.AccountServersListServerCharacters{
 			Id:  serverId,
 			Qty: qty,
 		})
@@ -240,10 +267,10 @@ func (s *session) AccountGetServersList(m msgcli.AccountGetServersList) error {
 
 	sort.Slice(serverCharacters, func(i, j int) bool { return serverCharacters[i].Id < serverCharacters[j].Id })
 
-	s.SendPacketMsg(sess.conn, &msgsvr.AccountServersListSuccess{
+	s.sendMsg(msgsvr.AccountServersListSuccess{
 		Subscription:      account.SubscribedUntil,
 		ServersCharacters: serverCharacters,
-	})*/
+	})
 
 	return nil
 }

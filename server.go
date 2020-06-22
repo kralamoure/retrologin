@@ -9,6 +9,7 @@ import (
 
 	"github.com/kralamoure/d1/service/login"
 	"github.com/kralamoure/d1proto/msgsvr"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -17,9 +18,11 @@ type Server struct {
 	addr   *net.TCPAddr
 	svc    *login.Service
 
+	mu       sync.Mutex
 	ln       *net.TCPListener
 	sessions map[*session]struct{}
-	mu       sync.Mutex
+
+	hosts atomic.Value
 }
 
 func (s *Server) ListenAndServe(ctx context.Context) error {
