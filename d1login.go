@@ -5,7 +5,6 @@ import (
 	"net"
 
 	"github.com/kralamoure/d1/service/login"
-	"github.com/kralamoure/d1proto/msgsvr"
 	"go.uber.org/zap"
 )
 
@@ -31,6 +30,5 @@ func NewServer(c Config) (*Server, error) {
 		addr:   addr,
 		svc:    c.Service,
 	}
-	s.hosts.Store(msgsvr.AccountHosts{})
 	return s, nil
 }

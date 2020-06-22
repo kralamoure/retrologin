@@ -25,7 +25,7 @@ type Server struct {
 	ln       *net.TCPListener
 	sessions map[*session]struct{}
 
-	hosts atomic.Value
+	hosts atomic.String
 }
 
 func (s *Server) ListenAndServe(ctx context.Context) error {
@@ -214,6 +214,10 @@ func (s *Server) updateHostsData(ctx context.Context) error {
 	sort.Slice(sli, func(i, j int) bool { return sli[i].Id < sli[j].Id })
 
 	m := msgsvr.AccountHosts{Value: sli}
-	s.hosts.Store(m)
+	hosts, err := m.Serialized()
+	if err != nil {
+		return err
+	}
+	s.hosts.Store(hosts)
 	return nil
 }
