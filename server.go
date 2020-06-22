@@ -200,8 +200,6 @@ func (s *Server) watchHosts(ctx context.Context, d time.Duration) error {
 }
 
 func (s *Server) fetchHosts(ctx context.Context) (string, error) {
-	m := msgsvr.AccountHosts{}
-
 	gameServers, err := s.svc.GameServers(ctx)
 	if err != nil {
 		return "", err
@@ -219,9 +217,11 @@ func (s *Server) fetchHosts(ctx context.Context) (string, error) {
 	}
 	sort.Slice(sli, func(i, j int) bool { return sli[i].Id < sli[j].Id })
 
+	m := msgsvr.AccountHosts{Value: sli}
 	hosts, err := m.Serialized()
 	if err != nil {
 		return "", err
 	}
+	s.logger.Debug(hosts)
 	return hosts, nil
 }
