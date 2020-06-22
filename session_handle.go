@@ -152,6 +152,7 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 			Qty: qty,
 		})
 	}
+	sort.Slice(serverCharacters, func(i, j int) bool { return serverCharacters[i].Id < serverCharacters[j].Id })
 
 	s.sendMsg(msgsvr.AccountFriendServerList{ServersCharacters: serverCharacters})
 
@@ -182,7 +183,6 @@ func (s *session) AccountGetServersList(ctx context.Context, m msgcli.AccountGet
 			Qty: qty,
 		})
 	}
-
 	sort.Slice(serverCharacters, func(i, j int) bool { return serverCharacters[i].Id < serverCharacters[j].Id })
 
 	s.sendMsg(msgsvr.AccountServersListSuccess{

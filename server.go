@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"sort"
 	"sync"
 	"time"
 
@@ -194,15 +195,10 @@ func (s *Server) updateHostsDataLoop(ctx context.Context, d time.Duration) error
 				}
 				sli = append(sli, host)
 			}
-			// sort.Slice(sli, func(i, j int) bool { return sli[i].Id < sli[j].Id })
+			sort.Slice(sli, func(i, j int) bool { return sli[i].Id < sli[j].Id })
 
-			msg := msgsvr.AccountHosts{Value: sli}
-			hosts, err := msg.Serialized()
-			if err != nil {
-				return err
-			}
-
-			s.hosts.Store(hosts)
+			m := msgsvr.AccountHosts{Value: sli}
+			s.hosts.Store(m)
 		case <-ctx.Done():
 			return ctx.Err()
 		}
