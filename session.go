@@ -133,13 +133,16 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 	return nil
 }
 
-func (s *session) sendMsg(msg d1proto.MsgSvr) error {
+func (s *session) sendMsg(msg d1proto.MsgSvr) {
 	pkt, err := msg.Serialized()
 	if err != nil {
-		return err
+		name, _ := d1proto.MsgSvrNameByID(msg.ProtocolId())
+		s.svr.logger.Error("could not serialize message",
+			zap.String("name", name),
+		)
+		return
 	}
 	s.sendPkt(fmt.Sprint(msg.ProtocolId(), pkt))
-	return nil
 }
 
 func (s *session) sendPkt(pkt string) {
