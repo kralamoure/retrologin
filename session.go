@@ -108,7 +108,7 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 		if err != nil {
 			return err
 		}
-		err = s.handleAccountSearchForFriend(msg)
+		err = s.handleAccountSearchForFriend(ctx, msg)
 		if err != nil {
 			return err
 		}

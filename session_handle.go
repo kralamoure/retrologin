@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/alexedwards/argon2id"
+	"github.com/kralamoure/d1"
 	"github.com/kralamoure/d1/filter"
 	"github.com/kralamoure/d1/typ"
 	"github.com/kralamoure/d1proto/enum"
@@ -163,18 +164,12 @@ func (s *session) login(ctx context.Context) error {
 }
 
 func (s *session) handleAccountVersion(m msgcli.AccountVersion) error {
-	/*sess.Version = m
-	sess.SetStatus(d1login.SessionStatusExpectingCredential)*/
-
 	s.version = m
 	s.status.Store(statusExpectingCredential)
 	return nil
 }
 
 func (s *session) handleAccountCredential(m msgcli.AccountCredential) error {
-	/*sess.Credential = m
-	sess.SetStatus(d1login.SessionStatusExpectingFirstQueuePosition)*/
-
 	s.credential = m
 	s.status.Store(statusExpectingQueuePosition)
 	return nil
@@ -196,18 +191,18 @@ func (s *session) handleAccountQueuePosition(ctx context.Context, m msgcli.Accou
 	return nil
 }
 
-func (s *session) handleAccountSearchForFriend(m msgcli.AccountSearchForFriend) error {
-	/*user, err := s.Login.User(filter.UserNicknameEQ(typ.Nickname(msg.Pseudo)))
+func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.AccountSearchForFriend) error {
+	user, err := s.svr.svc.User(ctx, filter.UserNicknameEQ(typ.Nickname(m.Pseudo)))
 	if err != nil {
 		if errors.Is(err, d1.ErrResourceNotFound) {
-			s.SendPacketMsg(sess.conn, &msgsvr.AccountFriendServerList{})
+			s.sendMsg(msgsvr.AccountFriendServerList{})
 			return nil
 		} else {
 			return err
 		}
 	}
 
-	accounts, err := s.Login.Accounts(filter.AccountUserIdEQ(user.Id))
+	accounts, err := s.svr.svc.Accounts(ctx, filter.AccountUserIdEQ(user.Id))
 	if err != nil {
 		return err
 	}
@@ -215,7 +210,7 @@ func (s *session) handleAccountSearchForFriend(m msgcli.AccountSearchForFriend) 
 	serverIdQty := make(map[int]int)
 
 	for _, account := range accounts {
-		characters, err := s.Login.Characters(filter.CharacterAccountIdEQ(account.Id))
+		characters, err := s.svr.svc.Characters(ctx, filter.CharacterAccountIdEQ(account.Id))
 		if err != nil {
 			return err
 		}
@@ -233,9 +228,7 @@ func (s *session) handleAccountSearchForFriend(m msgcli.AccountSearchForFriend) 
 		})
 	}
 
-	sort.Slice(serverCharacters, func(i, j int) bool { return serverCharacters[i].Id < serverCharacters[j].Id })
-
-	s.SendPacketMsg(sess.conn, &msgsvr.AccountFriendServerList{ServersCharacters: serverCharacters})*/
+	s.sendMsg(msgsvr.AccountFriendServerList{ServersCharacters: serverCharacters})
 
 	return nil
 }
