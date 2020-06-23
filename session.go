@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"time"
 
 	"github.com/kralamoure/d1proto"
 	"github.com/kralamoure/d1proto/msgcli"
@@ -33,9 +32,6 @@ type session struct {
 
 	version    msgcli.AccountVersion
 	credential msgcli.AccountCredential
-
-	lastAccess time.Time
-	lastIP     string
 
 	accountId int
 }

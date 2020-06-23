@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/alexedwards/argon2id"
+	"github.com/gofrs/uuid"
 	"github.com/kralamoure/d1"
 	"github.com/kralamoure/d1/filter"
 	"github.com/kralamoure/d1/typ"
@@ -60,9 +61,6 @@ func (s *session) login(ctx context.Context) error {
 		})
 		return errors.New("wrong password")
 	}
-
-	s.lastAccess = account.LastAccess
-	s.lastIP = account.LastIP
 
 	ip, _, err := net.SplitHostPort(s.conn.RemoteAddr().String())
 	if err != nil {
@@ -209,10 +207,25 @@ func (s *session) AccountSetServer(ctx context.Context, m msgcli.AccountSetServe
 		return err
 	}*/
 
+	ticketId, err := uuid.NewV4()
+	if err != nil {
+		return err
+	}
+
+	_, err = s.svr.svc.CreateTicket(ctx, d1.Ticket{
+		Id:           ticketId.String(),
+		AccountId:    s.accountId,
+		GameServerId: m.Id,
+		Created:      time.Now(),
+	})
+	if err != nil {
+		return err
+	}
+
 	s.sendMsg(msgsvr.AccountSelectServerPlainSuccess{
 		Host:   gameServer.Host,
 		Port:   gameServer.Port,
-		Ticket: "ticket",
+		Ticket: ticketId.String(),
 	})
 
 	return errEndOfService

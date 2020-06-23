@@ -4,7 +4,8 @@ go 1.14
 
 require (
 	github.com/alexedwards/argon2id v0.0.0-20200522061839-9369edc04b05
-	github.com/kralamoure/d1 v0.0.0-20200621231359-a179a3db6a7a
+	github.com/gofrs/uuid v3.2.0+incompatible
+	github.com/kralamoure/d1 v0.0.0-20200623234920-e23803ffa3e1
 	github.com/kralamoure/d1postgres v0.0.0-20200621011438-9253ccbff59d
 	github.com/kralamoure/d1proto v0.0.0-20200621072541-4ae7bb7f87c4
 	github.com/pkg/errors v0.9.1 // indirect
