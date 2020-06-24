@@ -116,7 +116,7 @@ func (s *Server) acceptLoop(ctx context.Context) error {
 			defer wg.Done()
 			err := s.handleClientConn(ctx, conn)
 			if err != nil && !(errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) || errors.Is(err, errEndOfService)) {
-				s.logger.Debug("error while handling client connection",
+				s.logger.Error("error while handling client connection",
 					zap.Error(err),
 					zap.String("client_address", conn.RemoteAddr().String()),
 				)
@@ -131,11 +131,11 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 
 	defer func() {
 		conn.Close()
-		s.logger.Debug("client disconnected",
+		s.logger.Info("client disconnected",
 			zap.String("client_address", conn.RemoteAddr().String()),
 		)
 	}()
-	s.logger.Debug("client connected",
+	s.logger.Info("client connected",
 		zap.String("client_address", conn.RemoteAddr().String()),
 	)
 
