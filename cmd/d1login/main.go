@@ -10,7 +10,6 @@ import (
 	"runtime/trace"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/kralamoure/d1/service/login"
 	"github.com/kralamoure/d1postgres"
@@ -106,10 +105,9 @@ func run() error {
 	}
 
 	svr, err := d1login.NewServer(d1login.Config{
-		Addr:      addr,
-		TicketDur: 5 * time.Second,
-		Service:   svc,
-		Logger:    logger.Named("server"),
+		Addr:    addr,
+		Service: svc,
+		Logger:  logger.Named("server"),
 	})
 	if err != nil {
 		return err
