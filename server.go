@@ -18,9 +18,10 @@ import (
 )
 
 type Server struct {
-	logger *zap.Logger
-	addr   *net.TCPAddr
-	svc    *login.Service
+	logger    *zap.Logger
+	addr      *net.TCPAddr
+	ticketDur time.Duration
+	svc       *login.Service
 
 	mu       sync.Mutex
 	ln       *net.TCPListener
@@ -260,7 +261,7 @@ func (s *Server) fetchHosts(ctx context.Context) (string, error) {
 }
 
 func (s *Server) deleteOldTickets(ctx context.Context) error {
-	return s.svc.DeleteTickets(ctx, filter.TicketCreatedLT(time.Now().Add(-5*time.Second)))
+	return s.svc.DeleteTickets(ctx, filter.TicketCreatedLT(time.Now().Add(-s.ticketDur)))
 }
 
 func (s *Server) trackSession(sess *session, add bool) {

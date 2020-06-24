@@ -3,15 +3,17 @@ package d1login
 import (
 	"errors"
 	"net"
+	"time"
 
 	"github.com/kralamoure/d1/service/login"
 	"go.uber.org/zap"
 )
 
 type Config struct {
-	Addr    string
-	Service *login.Service
-	Logger  *zap.Logger
+	Addr      string
+	TicketDur time.Duration
+	Service   *login.Service
+	Logger    *zap.Logger
 }
 
 func NewServer(c Config) (*Server, error) {
@@ -26,9 +28,10 @@ func NewServer(c Config) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
-		logger: c.Logger,
-		addr:   addr,
-		svc:    c.Service,
+		logger:    c.Logger,
+		addr:      addr,
+		ticketDur: c.TicketDur,
+		svc:       c.Service,
 	}
 	return s, nil
 }
