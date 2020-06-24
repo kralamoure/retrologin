@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const Version = "v0.10.0"
+const Version = "v0.11.0"
 
 type Config struct {
 	Addr        string

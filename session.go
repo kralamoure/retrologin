@@ -69,6 +69,14 @@ func (s *session) receivePkts(ctx context.Context) error {
 }
 
 func (s *session) handlePkt(ctx context.Context, pkt string) error {
+	defer func() {
+		if r := recover(); r != nil {
+			s.svr.logger.Error("recovered from panic",
+				zap.String("recover", fmt.Sprint(r)),
+			)
+		}
+	}()
+
 	id, ok := d1proto.MsgCliIdByPkt(pkt)
 	name, _ := d1proto.MsgCliNameByID(id)
 	s.svr.logger.Info("received packet from client",
