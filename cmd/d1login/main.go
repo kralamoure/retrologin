@@ -19,7 +19,7 @@ import (
 	"github.com/kralamoure/d1login"
 )
 
-const version = "v0.0.0"
+const version = "v0.2.0"
 
 var (
 	printVersion bool
@@ -91,10 +91,12 @@ func run() error {
 
 	errCh := make(chan error)
 
+	logger.Info("connecting to db")
 	db, err := d1postgres.NewDB(ctx, pgConnString)
 	if err != nil {
 		return err
 	}
+	defer db.Close()
 
 	svc, err := login.NewService(login.Config{
 		Repo:   db,
