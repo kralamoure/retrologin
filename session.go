@@ -67,6 +67,10 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 	}
 	extra := strings.TrimPrefix(pkt, string(id))
 
+	if !s.frameMsg(id) {
+		return errors.New("invalid frame")
+	}
+
 	switch id {
 	case d1proto.AccountVersion:
 		msg := msgcli.AccountVersion{}
@@ -123,6 +127,29 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 	}
 
 	return nil
+}
+
+func (s *session) frameMsg(id d1proto.MsgCliId) bool {
+	status := s.status.Load()
+	switch status {
+	case statusExpectingVersion:
+		if id != d1proto.AccountVersion {
+			return false
+		}
+	case statusExpectingCredential:
+		if id != d1proto.AccountCredential {
+			return false
+		}
+	case statusExpectingQueuePosition:
+		if id != d1proto.AccountQueuePosition {
+			return false
+		}
+	case statusIdle:
+		if id == d1proto.AccountVersion || id == d1proto.AccountCredential {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *session) sendMsg(msg d1proto.MsgSvr) {
