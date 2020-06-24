@@ -166,19 +166,6 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	}
 }
 
-func (s *Server) trackSession(sess *session, add bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if add {
-		if s.sessions == nil {
-			s.sessions = make(map[*session]struct{})
-		}
-		s.sessions[sess] = struct{}{}
-	} else {
-		delete(s.sessions, sess)
-	}
-}
-
 func (s *Server) watchHosts(ctx context.Context, d time.Duration) error {
 	ticker := time.NewTicker(d)
 	defer ticker.Stop()
@@ -240,4 +227,17 @@ func (s *Server) fetchHosts(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return hosts, nil
+}
+
+func (s *Server) trackSession(sess *session, add bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if add {
+		if s.sessions == nil {
+			s.sessions = make(map[*session]struct{})
+		}
+		s.sessions[sess] = struct{}{}
+	} else {
+		delete(s.sessions, sess)
+	}
 }
