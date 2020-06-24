@@ -14,6 +14,7 @@ import (
 	"github.com/kralamoure/d1proto/msgsvr"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -38,6 +39,8 @@ type session struct {
 }
 
 func (s *session) receivePkts(ctx context.Context) error {
+	lim := rate.NewLimiter(1, 10)
+
 	rd := bufio.NewReaderSize(s.conn, 256)
 	s.svr.logger.Debug(fmt.Sprint("reader size", rd.Size()))
 	for {
@@ -45,6 +48,11 @@ func (s *session) receivePkts(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		err = lim.Wait(ctx)
+		if err != nil {
+			return err
+		}
+
 		pkt = strings.TrimSuffix(pkt, "\n\x00")
 		if pkt == "" {
 			continue
