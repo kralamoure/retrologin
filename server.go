@@ -164,6 +164,10 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 		zap.String("client_address", conn.RemoteAddr().String()),
 	)
 
+	err = conn.SetLinger(5)
+	if err != nil {
+		return err
+	}
 	err = conn.SetKeepAlivePeriod(1 * time.Minute)
 	if err != nil {
 		return err
