@@ -15,6 +15,7 @@ import (
 	"github.com/kralamoure/d1postgres"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
+	"go.uber.org/zap/buffer"
 
 	"github.com/kralamoure/d1login"
 )
@@ -22,6 +23,7 @@ import (
 const (
 	programName        = "d1login"
 	programDescription = "d1login is a login server for Dofus 1."
+	programMoreInfo    = "https://github.com/kralamoure/d1login"
 )
 
 var (
@@ -151,7 +153,13 @@ func run() error {
 }
 
 func help(flagUsages string) string {
-	return fmt.Sprintf("Usage: %s [options]\n\n%s\n\nOptions:\n%s", programName, programDescription, flagUsages)
+	buf := &buffer.Buffer{}
+	fmt.Fprintf(buf, "%s\n\n", programDescription)
+	fmt.Fprintf(buf, "Find more information at: %s\n\n", programMoreInfo)
+	fmt.Fprint(buf, "Options:\n")
+	fmt.Fprintf(buf, "%s\n", flagUsages)
+	fmt.Fprintf(buf, "Usage: %s [options]", programName)
+	return buf.String()
 }
 
 func initFlagSet() {
