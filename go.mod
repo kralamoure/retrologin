@@ -17,9 +17,3 @@ require (
 	golang.org/x/tools v0.0.0-20200519015757-0d0afa43d58a // indirect
 	honnef.co/go/tools v0.0.1-2020.1.4 // indirect
 )
-
-replace github.com/kralamoure/d1 => ../d1
-
-replace github.com/kralamoure/d1postgres => ../d1postgres
-
-replace github.com/kralamoure/d1proto => ../d1proto
