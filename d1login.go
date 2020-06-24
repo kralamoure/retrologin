@@ -17,6 +17,9 @@ type Config struct {
 }
 
 func NewServer(c Config) (*Server, error) {
+	if c.TicketDur <= 0 {
+		c.TicketDur = 5 * time.Second
+	}
 	if c.Service == nil {
 		return nil, errors.New("nil service")
 	}
