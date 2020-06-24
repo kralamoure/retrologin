@@ -20,7 +20,7 @@ import (
 type Server struct {
 	logger      *zap.Logger
 	addr        *net.TCPAddr
-	readTimeout time.Duration
+	connTimeout time.Duration
 	ticketDur   time.Duration
 	svc         *login.Service
 
@@ -172,7 +172,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	if err != nil {
 		return err
 	}
-	err = conn.SetDeadline(time.Now().Add(s.readTimeout))
+	err = conn.SetDeadline(time.Now().Add(s.connTimeout))
 	if err != nil {
 		return err
 	}

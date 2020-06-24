@@ -10,6 +10,7 @@ import (
 	"runtime/trace"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/kralamoure/d1/service/login"
 	"github.com/kralamoure/d1postgres"
@@ -23,6 +24,7 @@ var (
 	printVersion bool
 	debug        bool
 	addr         string
+	connTimeout  time.Duration
 	pgConnString string
 )
 
@@ -105,9 +107,10 @@ func run() error {
 	}
 
 	svr, err := d1login.NewServer(d1login.Config{
-		Addr:    addr,
-		Service: svc,
-		Logger:  logger.Named("server"),
+		Addr:        addr,
+		ConnTimeout: connTimeout,
+		Service:     svc,
+		Logger:      logger.Named("server"),
 	})
 	if err != nil {
 		return err
@@ -143,6 +146,7 @@ func loadVars() error {
 	flags.BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
 	flags.StringVarP(&addr, "address", "a", "0.0.0.0:5555", "Server listener address")
 	flags.StringVarP(&pgConnString, "postgres", "p", "postgresql://user:password@host/database", "PostgreSQL connection string")
+	flags.DurationVarP(&connTimeout, "timeout", "t", 30*time.Minute, "Connection timeout")
 	flags.SortFlags = false
 	return flags.Parse(os.Args)
 }

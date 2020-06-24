@@ -40,7 +40,7 @@ func NewServer(c Config) (*Server, error) {
 		logger:      c.Logger,
 		addr:        addr,
 		ticketDur:   c.TicketDur,
-		readTimeout: c.ConnTimeout,
+		connTimeout: c.ConnTimeout,
 		svc:         c.Service,
 	}
 	return s, nil
