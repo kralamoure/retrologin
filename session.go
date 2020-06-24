@@ -52,7 +52,6 @@ func (s *session) receivePkts(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-
 		pkt = strings.TrimSuffix(pkt, "\n\x00")
 		if pkt == "" {
 			continue
