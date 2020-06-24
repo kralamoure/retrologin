@@ -141,7 +141,7 @@ func loadVars() error {
 	flags := pflag.NewFlagSet("d1login", pflag.ContinueOnError)
 	flags.BoolVarP(&printVersion, "version", "v", false, "Print version")
 	flags.BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
-	flags.StringVarP(&addr, "address", "a", "0.0.0.0:5555", "server listener's address")
+	flags.StringVarP(&addr, "address", "a", "0.0.0.0:5555", "Server listener address")
 	flags.StringVarP(&pgConnString, "postgres", "p", "postgresql://user:password@host/database", "PostgreSQL connection string")
 	flags.SortFlags = false
 	return flags.Parse(os.Args)
