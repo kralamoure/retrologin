@@ -39,7 +39,7 @@ type session struct {
 }
 
 func (s *session) receivePkts(ctx context.Context) error {
-	lim := rate.NewLimiter(1, 10)
+	lim := rate.NewLimiter(1, 5)
 
 	rd := bufio.NewReaderSize(s.conn, 256)
 	s.svr.logger.Debug(fmt.Sprint("reader size", rd.Size()))
