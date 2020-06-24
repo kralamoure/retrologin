@@ -65,6 +65,7 @@ func (s *session) login(ctx context.Context) error {
 	for sess := range s.svr.sessions {
 		if sess.accountId == account.Id {
 			sess.conn.Close()
+			break
 		}
 	}
 	s.accountId = account.Id
