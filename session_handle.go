@@ -103,7 +103,7 @@ func (s *session) handleAccountCredential(m msgcli.AccountCredential) error {
 	return nil
 }
 
-func (s *session) handleAccountQueuePosition(ctx context.Context, m msgcli.AccountQueuePosition) error {
+func (s *session) handleAccountQueuePosition(ctx context.Context) error {
 	s.sendMsg(msgsvr.AccountNewQueue{
 		Position:    1,
 		TotalAbo:    0,
@@ -162,7 +162,7 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 	return nil
 }
 
-func (s *session) AccountGetServersList(ctx context.Context, m msgcli.AccountGetServersList) error {
+func (s *session) AccountGetServersList(ctx context.Context) error {
 	account, err := s.svr.svc.Account(ctx, filter.AccountIdEQ(s.accountId))
 	if err != nil {
 		return err

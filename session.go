@@ -89,12 +89,7 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 			return err
 		}
 	case d1proto.AccountQueuePosition:
-		msg := msgcli.AccountQueuePosition{}
-		err := msg.Deserialize(extra)
-		if err != nil {
-			return err
-		}
-		err = s.handleAccountQueuePosition(ctx, msg)
+		err := s.handleAccountQueuePosition(ctx)
 		if err != nil {
 			return err
 		}
@@ -109,12 +104,7 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 			return err
 		}
 	case d1proto.AccountGetServersList:
-		msg := msgcli.AccountGetServersList{}
-		err := msg.Deserialize(extra)
-		if err != nil {
-			return err
-		}
-		err = s.AccountGetServersList(ctx, msg)
+		err := s.AccountGetServersList(ctx)
 		if err != nil {
 			return err
 		}
