@@ -7,7 +7,7 @@ require (
 	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/kralamoure/d1 v0.0.0-20200624022547-0cc18613fa26
 	github.com/kralamoure/d1postgres v0.0.0-20200624031614-ad748dc460c9
-	github.com/kralamoure/d1proto v0.0.0-20200624034756-3fb4625ece6c
+	github.com/kralamoure/d1proto v0.0.0-20200624185805-884b13b7ab25
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/pflag v1.0.5
 	go.uber.org/atomic v1.6.0
