@@ -9,6 +9,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const Version = "v0.3.0"
+
 type Config struct {
 	Addr      string
 	TicketDur time.Duration

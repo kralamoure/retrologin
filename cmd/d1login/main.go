@@ -19,8 +19,6 @@ import (
 	"github.com/kralamoure/d1login"
 )
 
-const version = "v0.3.0"
-
 var (
 	printVersion bool
 	debug        bool
@@ -41,7 +39,7 @@ func main() {
 	}
 
 	if printVersion {
-		fmt.Println(version)
+		fmt.Println(d1login.Version)
 		return
 	}
 
