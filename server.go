@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kralamoure/d1/filter"
 	"github.com/kralamoure/d1/service/login"
 	"github.com/kralamoure/d1proto/msgsvr"
 	"github.com/kralamoure/d1proto/typ"
@@ -54,6 +55,18 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	s.ln = ln
 
 	errCh := make(chan error)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := s.watchTickets(ctx, 1*time.Second)
+		if err != nil {
+			select {
+			case errCh <- err:
+			case <-ctx.Done():
+			}
+		}
+	}()
 
 	wg.Add(1)
 	go func() {
@@ -192,6 +205,23 @@ func (s *Server) watchHosts(ctx context.Context, d time.Duration) error {
 	}
 }
 
+func (s *Server) watchTickets(ctx context.Context, d time.Duration) error {
+	ticker := time.NewTicker(d)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			err := s.deleteOldTickets(ctx)
+			if err != nil {
+				return err
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
 func (s *Server) sendUpdatedHosts(hosts msgsvr.AccountHosts) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -227,6 +257,10 @@ func (s *Server) fetchHosts(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return hosts, nil
+}
+
+func (s *Server) deleteOldTickets(ctx context.Context) error {
+	return s.svc.DeleteTickets(ctx, filter.TicketCreatedLT(time.Now().Add(-5*time.Second)))
 }
 
 func (s *Server) trackSession(sess *session, add bool) {
