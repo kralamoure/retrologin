@@ -18,10 +18,11 @@ import (
 )
 
 type Server struct {
-	logger    *zap.Logger
-	addr      *net.TCPAddr
-	ticketDur time.Duration
-	svc       *login.Service
+	logger      *zap.Logger
+	addr        *net.TCPAddr
+	readTimeout time.Duration
+	ticketDur   time.Duration
+	svc         *login.Service
 
 	mu       sync.Mutex
 	ln       *net.TCPListener
@@ -115,11 +116,21 @@ func (s *Server) acceptLoop(ctx context.Context) error {
 		go func() {
 			defer wg.Done()
 			err := s.handleClientConn(ctx, conn)
-			if err != nil && !(errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) || errors.Is(err, errEndOfService)) {
-				s.logger.Error("error while handling client connection",
-					zap.Error(err),
-					zap.String("client_address", conn.RemoteAddr().String()),
-				)
+			if err != nil {
+				var isTimeout bool
+				netErr, ok := err.(net.Error)
+				if ok {
+					isTimeout = netErr.Timeout()
+				}
+				if !(isTimeout ||
+					errors.Is(err, io.EOF) ||
+					errors.Is(err, context.Canceled) ||
+					errors.Is(err, errEndOfService)) {
+					s.logger.Error("error while handling client connection",
+						zap.Error(err),
+						zap.String("client_address", conn.RemoteAddr().String()),
+					)
+				}
 			}
 		}()
 	}
@@ -152,6 +163,19 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 
 	s.trackSession(sess, true)
 	defer s.trackSession(sess, false)
+
+	err = conn.SetKeepAlivePeriod(1 * time.Minute)
+	if err != nil {
+		return err
+	}
+	err = conn.SetKeepAlive(true)
+	if err != nil {
+		return err
+	}
+	err = conn.SetDeadline(time.Now().Add(s.readTimeout))
+	if err != nil {
+		return err
+	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

@@ -12,13 +12,17 @@ import (
 const Version = "v0.6.0"
 
 type Config struct {
-	Addr      string
-	TicketDur time.Duration
-	Service   *login.Service
-	Logger    *zap.Logger
+	Addr        string
+	ConnTimeout time.Duration
+	TicketDur   time.Duration
+	Service     *login.Service
+	Logger      *zap.Logger
 }
 
 func NewServer(c Config) (*Server, error) {
+	if c.ConnTimeout <= 0 {
+		c.ConnTimeout = 30 * time.Minute
+	}
 	if c.TicketDur <= 0 {
 		c.TicketDur = 20 * time.Second
 	}
@@ -33,10 +37,11 @@ func NewServer(c Config) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
-		logger:    c.Logger,
-		addr:      addr,
-		ticketDur: c.TicketDur,
-		svc:       c.Service,
+		logger:      c.Logger,
+		addr:        addr,
+		ticketDur:   c.TicketDur,
+		readTimeout: c.ConnTimeout,
+		svc:         c.Service,
 	}
 	return s, nil
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/kralamoure/d1proto"
 	"github.com/kralamoure/d1proto/msgcli"
@@ -47,6 +48,11 @@ func (s *session) receivePkts(ctx context.Context) error {
 		if pkt == "" {
 			continue
 		}
+		err = s.conn.SetDeadline(time.Now().Add(s.svr.readTimeout))
+		if err != nil {
+			return err
+		}
+
 		err = s.handlePkt(ctx, pkt)
 		if err != nil {
 			return err
