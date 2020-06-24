@@ -61,15 +61,13 @@ func (s *session) login(ctx context.Context) error {
 		return errors.New("wrong password")
 	}
 
-	s.svr.mu.Lock()
-	for sess := range s.svr.sessions {
-		if sess.accountId == account.Id {
-			sess.conn.Close()
-			break
-		}
+	err = s.takeoverAccount(account.Id)
+	if err != nil {
+		s.sendMsg(msgsvr.AccountLoginError{
+			Reason: enum.AccountLoginErrorReason.AlreadyLogged,
+		})
+		return err
 	}
-	s.accountId = account.Id
-	s.svr.mu.Unlock()
 
 	s.sendMsg(msgsvr.AccountPseudo{Value: string(user.Nickname)})
 	s.sendMsg(msgsvr.AccountCommunity{Id: int(user.Community)})
@@ -85,6 +83,19 @@ func (s *session) login(ctx context.Context) error {
 	s.sendMsg(msgsvr.AccountLoginSuccess{Authorized: account.Admin})
 
 	s.status.Store(statusIdle)
+	return nil
+}
+
+func (s *session) takeoverAccount(accountId int) error {
+	s.svr.mu.Lock()
+	defer s.svr.mu.Unlock()
+	for sess := range s.svr.sessions {
+		if sess.accountId == accountId {
+			sess.conn.Close()
+			return errors.New("already logged in")
+		}
+	}
+	s.accountId = accountId
 	return nil
 }
 

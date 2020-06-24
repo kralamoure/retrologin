@@ -137,19 +137,6 @@ func (s *Server) acceptLoop(ctx context.Context) error {
 }
 
 func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error {
-	var wg sync.WaitGroup
-	defer wg.Wait()
-
-	defer func() {
-		conn.Close()
-		s.logger.Info("client disconnected",
-			zap.String("client_address", conn.RemoteAddr().String()),
-		)
-	}()
-	s.logger.Info("client connected",
-		zap.String("client_address", conn.RemoteAddr().String()),
-	)
-
 	salt, err := randomSalt(32)
 	if err != nil {
 		return err
@@ -163,6 +150,19 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 
 	s.trackSession(sess, true)
 	defer s.trackSession(sess, false)
+
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	defer func() {
+		conn.Close()
+		s.logger.Info("client disconnected",
+			zap.String("client_address", conn.RemoteAddr().String()),
+		)
+	}()
+	s.logger.Info("client connected",
+		zap.String("client_address", conn.RemoteAddr().String()),
+	)
 
 	err = conn.SetKeepAlivePeriod(1 * time.Minute)
 	if err != nil {
