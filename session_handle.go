@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"sort"
 	"time"
 
@@ -62,17 +61,14 @@ func (s *session) login(ctx context.Context) error {
 		return errors.New("wrong password")
 	}
 
-	ip, _, err := net.SplitHostPort(s.conn.RemoteAddr().String())
-	if err != nil {
-		return err
+	s.svr.mu.Lock()
+	for sess := range s.svr.sessions {
+		if sess.accountId == account.Id {
+			sess.conn.Close()
+		}
 	}
-
-	err = s.svr.svc.SetAccountLastAccessAndIP(ctx, account.Id, time.Now(), ip)
-	if err != nil {
-		return err
-	}
-
 	s.accountId = account.Id
+	s.svr.mu.Unlock()
 
 	s.sendMsg(msgsvr.AccountPseudo{Value: string(user.Nickname)})
 	s.sendMsg(msgsvr.AccountCommunity{Id: int(user.Community)})
