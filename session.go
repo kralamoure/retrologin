@@ -38,7 +38,8 @@ type session struct {
 }
 
 func (s *session) receivePkts(ctx context.Context) error {
-	rd := bufio.NewReader(s.conn)
+	rd := bufio.NewReaderSize(s.conn, 256)
+	s.svr.logger.Debug(fmt.Sprint("reader size", rd.Size()))
 	for {
 		pkt, err := rd.ReadString('\x00')
 		if err != nil {
