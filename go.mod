@@ -6,7 +6,7 @@ require (
 	github.com/alexedwards/argon2id v0.0.0-20200522061839-9369edc04b05
 	github.com/gofrs/uuid v3.3.0+incompatible
 	github.com/kralamoure/d1 v0.0.0-20200624022547-0cc18613fa26
-	github.com/kralamoure/d1postgres v0.0.0-20200624023139-453c14729b06
+	github.com/kralamoure/d1postgres v0.0.0-20200624031614-ad748dc460c9
 	github.com/kralamoure/d1proto v0.0.0-20200621072541-4ae7bb7f87c4
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/pflag v1.0.5

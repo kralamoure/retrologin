@@ -83,6 +83,8 @@ github.com/kralamoure/d1 v0.0.0-20200624022547-0cc18613fa26 h1:+qOr6jyrZoLFmYkK9
 github.com/kralamoure/d1 v0.0.0-20200624022547-0cc18613fa26/go.mod h1:dfkzOwaAKNUAcf7vOO+XCqwnxG5a1ARh/oqALWpX6No=
 github.com/kralamoure/d1postgres v0.0.0-20200624023139-453c14729b06 h1:QI7bqsXSXWGOi3npKofM6ZH0yjLGM1Oq+uSxdmpIf/Y=
 github.com/kralamoure/d1postgres v0.0.0-20200624023139-453c14729b06/go.mod h1:vkgWPka5aq9HGWf5/Hhy0qNdbNwD5gz+GVj1xcLvyeg=
+github.com/kralamoure/d1postgres v0.0.0-20200624031614-ad748dc460c9 h1:PcQHIxQ77UeYbwHN8SUaOYmPIrKi2ZG+UlCAfwa57Dc=
+github.com/kralamoure/d1postgres v0.0.0-20200624031614-ad748dc460c9/go.mod h1:vkgWPka5aq9HGWf5/Hhy0qNdbNwD5gz+GVj1xcLvyeg=
 github.com/kralamoure/d1proto v0.0.0-20200621072541-4ae7bb7f87c4 h1:nXIjp+ciGD8je5qdK0uH5o609L23p7Lbzaf9gxDRGh0=
 github.com/kralamoure/d1proto v0.0.0-20200621072541-4ae7bb7f87c4/go.mod h1:c0AU6u1JK7jHGy0GjWqkyap6PhDc4sgh8JvzBYnRtGI=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=

@@ -19,7 +19,7 @@ import (
 	"github.com/kralamoure/d1login"
 )
 
-const version = "v0.2.0"
+const version = "v0.3.0"
 
 var (
 	printVersion bool
