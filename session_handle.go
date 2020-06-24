@@ -202,11 +202,6 @@ func (s *session) AccountSetServer(ctx context.Context, m msgcli.AccountSetServe
 		return err
 	}
 
-	/*tokenData, err := s.TokenData(sess.AccountId, gameServer.Id, sess.LastAccess, sess.LastIP)
-	if err != nil {
-		return err
-	}*/
-
 	ticketId, err := uuid.NewV4()
 	if err != nil {
 		return err
