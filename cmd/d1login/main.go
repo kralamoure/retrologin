@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -20,7 +19,13 @@ import (
 	"github.com/kralamoure/d1login"
 )
 
+const (
+	programName        = "d1login"
+	programDescription = "d1login is a login server for Dofus 1."
+)
+
 var (
+	printHelp    bool
 	printVersion bool
 	debug        bool
 	addr         string
@@ -28,18 +33,23 @@ var (
 	pgConnString string
 )
 
-var logger *zap.Logger
+var (
+	flagSet *pflag.FlagSet
+	logger  *zap.Logger
+)
 
 func main() {
-	err := loadVars()
+	initFlagSet()
+	err := flagSet.Parse(os.Args)
 	if err != nil {
-		if errors.Is(err, pflag.ErrHelp) {
-			return
-		}
 		log.Println(err)
 		os.Exit(2)
 	}
 
+	if printHelp {
+		fmt.Println(help(flagSet.FlagUsages()))
+		return
+	}
 	if printVersion {
 		fmt.Println(d1login.Version)
 		return
@@ -140,13 +150,17 @@ func run() error {
 	return nil
 }
 
-func loadVars() error {
-	flags := pflag.NewFlagSet("d1login", pflag.ContinueOnError)
-	flags.BoolVarP(&printVersion, "version", "v", false, "Print version")
-	flags.BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
-	flags.StringVarP(&addr, "address", "a", "0.0.0.0:5555", "Server listener address")
-	flags.StringVarP(&pgConnString, "postgres", "p", "postgresql://user:password@host/database", "PostgreSQL connection string")
-	flags.DurationVarP(&connTimeout, "timeout", "t", 30*time.Minute, "Connection timeout")
-	flags.SortFlags = false
-	return flags.Parse(os.Args)
+func help(flagUsages string) string {
+	return fmt.Sprintf("Usage: %s [options]\n\n%s\n\nOptions:\n%s", programName, programDescription, flagUsages)
+}
+
+func initFlagSet() {
+	flagSet = pflag.NewFlagSet("d1login", pflag.ContinueOnError)
+	flagSet.BoolVarP(&printHelp, "help", "h", false, "Print usage information")
+	flagSet.BoolVarP(&printVersion, "version", "v", false, "Print version")
+	flagSet.BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
+	flagSet.StringVarP(&addr, "address", "a", "0.0.0.0:5555", "Server listener address")
+	flagSet.StringVarP(&pgConnString, "postgres", "p", "postgresql://user:password@host/database", "PostgreSQL connection string")
+	flagSet.DurationVarP(&connTimeout, "timeout", "t", 30*time.Minute, "Connection timeout")
+	flagSet.SortFlags = false
 }
