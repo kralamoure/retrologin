@@ -44,7 +44,7 @@ func main() {
 	initFlagSet()
 	err := flagSet.Parse(os.Args)
 	if err != nil {
-		log.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
 
@@ -57,15 +57,16 @@ func main() {
 		return
 	}
 
+	l := log.New(os.Stderr, "", 0)
 	if debug {
 		logger, err = zap.NewDevelopment()
 		if err != nil {
-			log.Fatalln(err)
+			l.Fatalln(err)
 		}
 	} else {
 		logger, err = zap.NewProduction()
 		if err != nil {
-			log.Fatalln(err)
+			l.Fatalln(err)
 		}
 	}
 
