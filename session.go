@@ -42,7 +42,6 @@ func (s *session) receivePkts(ctx context.Context) error {
 	lim := rate.NewLimiter(1, 5)
 
 	rd := bufio.NewReaderSize(s.conn, 256)
-	s.svr.logger.Debug(fmt.Sprint("reader size", rd.Size()))
 	for {
 		pkt, err := rd.ReadString('\x00')
 		if err != nil {
@@ -85,12 +84,18 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 		zap.String("packet", pkt),
 	)
 	if !ok {
-		return errors.New("unknown packet")
+		s.svr.logger.Debug("unknown packet",
+			zap.String("client_address", s.conn.RemoteAddr().String()),
+		)
+		return errEndOfService
 	}
 	extra := strings.TrimPrefix(pkt, string(id))
 
 	if !s.frameMsg(id) {
-		return errors.New("invalid frame")
+		s.svr.logger.Debug("invalid frame",
+			zap.String("client_address", s.conn.RemoteAddr().String()),
+		)
+		return errEndOfService
 	}
 
 	switch id {

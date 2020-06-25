@@ -3,7 +3,6 @@ package d1login
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sort"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/kralamoure/d1proto/msgcli"
 	"github.com/kralamoure/d1proto/msgsvr"
 	prototyp "github.com/kralamoure/d1proto/typ"
+	"go.uber.org/zap"
 )
 
 func (s *session) login(ctx context.Context) error {
@@ -24,16 +24,32 @@ func (s *session) login(ctx context.Context) error {
 			Reason: enum.AccountLoginErrorReason.BadVersion,
 			Extra:  "^1.29.0",
 		})
-		return nil
+		versionStr, err := s.version.Serialized()
+		if err != nil {
+			return err
+		}
+		s.svr.logger.Debug("wrong version",
+			zap.String("client_address", s.conn.RemoteAddr().String()),
+			zap.String("version", versionStr),
+		)
+		return errEndOfService
 	}
 
 	if s.credential.CryptoMethod != 1 {
-		return fmt.Errorf("unhandled crypto method: %d", s.credential.CryptoMethod)
+		s.svr.logger.Debug("unhandled crypto method",
+			zap.String("client_address", s.conn.RemoteAddr().String()),
+			zap.Int("crypto_method", s.credential.CryptoMethod),
+		)
+		return errEndOfService
 	}
 
 	password, err := decryptedPassword(s.credential.Hash, s.salt)
 	if err != nil {
-		return err
+		s.svr.logger.Debug("could not decrypt password",
+			zap.String("client_address", s.conn.RemoteAddr().String()),
+			zap.Error(err),
+		)
+		return errEndOfService
 	}
 
 	account, err := s.svr.svc.Account(ctx, filter.AccountNameEQ(typ.AccountName(s.credential.Username)))
@@ -58,15 +74,22 @@ func (s *session) login(ctx context.Context) error {
 		s.sendMsg(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AccessDenied,
 		})
-		return errors.New("wrong password")
+		s.svr.logger.Debug("wrong password",
+			zap.String("client_address", s.conn.RemoteAddr().String()),
+		)
+		return errEndOfService
 	}
 
-	err = s.takeoverAccount(account.Id)
+	err = s.controlAccount(account.Id)
 	if err != nil {
 		s.sendMsg(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AlreadyLogged,
 		})
-		return err
+		s.svr.logger.Debug("could not control account",
+			zap.String("client_address", s.conn.RemoteAddr().String()),
+			zap.Error(err),
+		)
+		return errEndOfService
 	}
 
 	s.sendMsg(msgsvr.AccountPseudo{Value: string(user.Nickname)})
@@ -86,7 +109,7 @@ func (s *session) login(ctx context.Context) error {
 	return nil
 }
 
-func (s *session) takeoverAccount(accountId int) error {
+func (s *session) controlAccount(accountId int) error {
 	s.svr.mu.Lock()
 	defer s.svr.mu.Unlock()
 	for sess := range s.svr.sessions {
