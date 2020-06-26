@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	statusExpectingVersion uint32 = iota
-	statusExpectingCredential
-	statusExpectingQueuePosition
+	statusExpectingAccountVersion uint32 = iota
+	statusExpectingAccountCredential
+	statusExpectingAccountQueuePosition
 	statusIdle
 )
 
@@ -159,15 +159,15 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 func (s *session) frameMsg(id d1proto.MsgCliId) bool {
 	status := s.status.Load()
 	switch status {
-	case statusExpectingVersion:
+	case statusExpectingAccountVersion:
 		if id != d1proto.AccountVersion {
 			return false
 		}
-	case statusExpectingCredential:
+	case statusExpectingAccountCredential:
 		if id != d1proto.AccountCredential {
 			return false
 		}
-	case statusExpectingQueuePosition:
+	case statusExpectingAccountQueuePosition:
 		if id != d1proto.AccountQueuePosition {
 			return false
 		}

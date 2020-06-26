@@ -124,13 +124,13 @@ func (s *session) controlAccount(accountId int) error {
 
 func (s *session) handleAccountVersion(m msgcli.AccountVersion) error {
 	s.version = m
-	s.status.Store(statusExpectingCredential)
+	s.status.Store(statusExpectingAccountCredential)
 	return nil
 }
 
 func (s *session) handleAccountCredential(m msgcli.AccountCredential) error {
 	s.credential = m
-	s.status.Store(statusExpectingQueuePosition)
+	s.status.Store(statusExpectingAccountQueuePosition)
 	return nil
 }
 
@@ -143,7 +143,7 @@ func (s *session) handleAccountQueuePosition(ctx context.Context) error {
 		QueueId:     0,
 	})
 
-	if s.status.Load() == statusExpectingQueuePosition {
+	if s.status.Load() == statusExpectingAccountQueuePosition {
 		return s.login(ctx)
 	}
 
