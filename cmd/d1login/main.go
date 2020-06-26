@@ -30,7 +30,7 @@ var (
 	printHelp    bool
 	printVersion bool
 	debug        bool
-	addr         string
+	serverAddr   string
 	connTimeout  time.Duration
 	pgConnString string
 )
@@ -117,7 +117,7 @@ func run() error {
 	}
 
 	svr, err := d1login.NewServer(d1login.Config{
-		Addr:        addr,
+		Addr:        serverAddr,
 		ConnTimeout: connTimeout,
 		Service:     svc,
 		Logger:      logger.Named("server"),
@@ -171,7 +171,7 @@ func initFlagSet() {
 	flagSet.BoolVarP(&printHelp, "help", "h", false, "Print usage information")
 	flagSet.BoolVarP(&printVersion, "version", "v", false, "Print version")
 	flagSet.BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
-	flagSet.StringVarP(&addr, "address", "a", "0.0.0.0:5555", "Server listener address")
+	flagSet.StringVarP(&serverAddr, "address", "a", "0.0.0.0:5555", "Server listener address")
 	flagSet.StringVarP(&pgConnString, "postgres", "p", "postgresql://user:password@host/database", "PostgreSQL connection string")
 	flagSet.DurationVarP(&connTimeout, "timeout", "t", 30*time.Minute, "Connection timeout")
 	flagSet.SortFlags = false
