@@ -193,7 +193,7 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 	return nil
 }
 
-func (s *session) AccountGetServersList(ctx context.Context) error {
+func (s *session) handleAccountGetServersList(ctx context.Context) error {
 	account, err := s.svr.svc.Account(ctx, filter.AccountIdEQ(s.accountId))
 	if err != nil {
 		return err
@@ -227,7 +227,7 @@ func (s *session) AccountGetServersList(ctx context.Context) error {
 	return nil
 }
 
-func (s *session) AccountSetServer(ctx context.Context, m msgcli.AccountSetServer) error {
+func (s *session) handleAccountSetServer(ctx context.Context, m msgcli.AccountSetServer) error {
 	gameServer, err := s.svr.svc.GameServer(ctx, filter.GameServerIdEQ(m.Id))
 	if err != nil {
 		return err

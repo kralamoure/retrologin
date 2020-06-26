@@ -135,7 +135,7 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 			return err
 		}
 	case d1proto.AccountGetServersList:
-		err := s.AccountGetServersList(ctx)
+		err := s.handleAccountGetServersList(ctx)
 		if err != nil {
 			return err
 		}
@@ -145,7 +145,7 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 		if err != nil {
 			return err
 		}
-		err = s.AccountSetServer(ctx, msg)
+		err = s.handleAccountSetServer(ctx, msg)
 		if err != nil {
 			return err
 		}
