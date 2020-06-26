@@ -92,9 +92,6 @@ func run() error {
 		defer trace.Stop()
 	}
 
-	var wg sync.WaitGroup
-	defer wg.Wait()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -128,6 +125,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -140,17 +141,19 @@ func run() error {
 		}
 	}()
 
+	var selErr error
 	select {
 	case sig := <-sigCh:
+		signal.Stop(sigCh)
 		logger.Info("received signal",
 			zap.String("signal", sig.String()),
 		)
 	case err := <-errCh:
-		logger.Error(err.Error())
-		return err
+		selErr = err
 	case <-ctx.Done():
 	}
-	return nil
+	cancel()
+	return selErr
 }
 
 func help(flagUsages string) string {
