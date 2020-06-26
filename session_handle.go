@@ -242,7 +242,7 @@ func (s *session) handleAccountSetServer(ctx context.Context, m msgcli.AccountSe
 		Id:           ticketId.String(),
 		AccountId:    s.accountId,
 		GameServerId: m.Id,
-		Created:      time.Now(),
+		Created:      time.Now().UTC(),
 	})
 	if err != nil {
 		return err

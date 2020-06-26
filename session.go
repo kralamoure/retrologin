@@ -55,7 +55,7 @@ func (s *session) receivePkts(ctx context.Context) error {
 		if pkt == "" {
 			continue
 		}
-		err = s.conn.SetDeadline(time.Now().Add(s.svr.connTimeout))
+		err = s.conn.SetDeadline(time.Now().UTC().Add(s.svr.connTimeout))
 		if err != nil {
 			return err
 		}

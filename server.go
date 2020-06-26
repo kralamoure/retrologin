@@ -172,7 +172,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	if err != nil {
 		return err
 	}
-	err = conn.SetDeadline(time.Now().Add(s.connTimeout))
+	err = conn.SetDeadline(time.Now().UTC().Add(s.connTimeout))
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,7 @@ func (s *Server) fetchHosts(ctx context.Context) (string, error) {
 }
 
 func (s *Server) deleteOldTickets(ctx context.Context) error {
-	return s.svc.DeleteTickets(ctx, filter.TicketCreatedLT(time.Now().Add(-s.ticketDur)))
+	return s.svc.DeleteTickets(ctx, filter.TicketCreatedLT(time.Now().UTC().Add(-s.ticketDur)))
 }
 
 func (s *Server) trackSession(sess *session, add bool) {
