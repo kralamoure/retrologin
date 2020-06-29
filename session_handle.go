@@ -90,7 +90,7 @@ func (s *session) login(ctx context.Context) error {
 
 	s.sendMsg(msgsvr.AccountPseudo{Value: string(user.Nickname)})
 	s.sendMsg(msgsvr.AccountCommunity{Id: int(user.Community)})
-	s.sendMsg(msgsvr.AccountSecretQuestion{Value: user.Question})
+	s.sendMsg(msgsvr.AccountSecretQuestion{Value: user.SecretQuestion})
 
 	hosts := msgsvr.AccountHosts{}
 	err = hosts.Deserialize(s.svr.hosts.Load())
