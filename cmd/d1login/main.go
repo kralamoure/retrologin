@@ -101,8 +101,6 @@ func run() error {
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	defer signal.Stop(sigCh)
 
-	errCh := make(chan error)
-
 	cfg, err := pgxpool.ParseConfig(pgConnString)
 	if err != nil {
 		return err
@@ -138,6 +136,8 @@ func run() error {
 
 	var wg sync.WaitGroup
 	defer wg.Wait()
+
+	errCh := make(chan error)
 
 	wg.Add(1)
 	go func() {
