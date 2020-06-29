@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/kralamoure/d1/service/login"
 	"github.com/kralamoure/d1postgres"
 	"github.com/spf13/pflag"
@@ -101,15 +102,23 @@ func run() error {
 
 	errCh := make(chan error)
 
-	logger.Info("connecting to db")
-	db, err := d1postgres.NewDB(ctx, pgConnString)
+	cfg, err := pgxpool.ParseConfig(pgConnString)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	pool, err := pgxpool.ConnectConfig(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+
+	repo, err := d1postgres.NewLoginRepo(pool)
+	if err != nil {
+		return err
+	}
 
 	svc, err := login.NewService(login.Config{
-		Repo:   db,
+		Repo:   repo,
 		Logger: logger.Named("service"),
 	})
 	if err != nil {

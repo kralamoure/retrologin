@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kralamoure/d1/filter"
 	"github.com/kralamoure/d1/service/login"
 	"github.com/kralamoure/d1proto/msgsvr"
 	"github.com/kralamoure/d1proto/typ"
@@ -237,9 +236,14 @@ func (s *Server) watchTickets(ctx context.Context, d time.Duration) error {
 	for {
 		select {
 		case <-ticker.C:
-			err := s.deleteOldTickets(ctx)
+			count, err := s.deleteOldTickets(ctx)
 			if err != nil {
 				return err
+			}
+			if count > 0 {
+				s.logger.Debug("deleted old tickets",
+					zap.Int("count", count),
+				)
 			}
 		case <-ctx.Done():
 			return ctx.Err()
@@ -284,8 +288,8 @@ func (s *Server) fetchHosts(ctx context.Context) (string, error) {
 	return hosts, nil
 }
 
-func (s *Server) deleteOldTickets(ctx context.Context) error {
-	return s.svc.DeleteTickets(ctx, filter.TicketCreatedLT(time.Now().UTC().Add(-s.ticketDur)))
+func (s *Server) deleteOldTickets(ctx context.Context) (count int, err error) {
+	return s.svc.DeleteTickets(ctx, time.Now().UTC().Add(-s.ticketDur))
 }
 
 func (s *Server) trackSession(sess *session, add bool) {

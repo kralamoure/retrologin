@@ -35,7 +35,7 @@ type session struct {
 	version    msgcli.AccountVersion
 	credential msgcli.AccountCredential
 
-	accountId int
+	accountId string
 }
 
 func (s *session) receivePkts(ctx context.Context) error {

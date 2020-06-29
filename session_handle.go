@@ -9,8 +9,6 @@ import (
 	"github.com/alexedwards/argon2id"
 	"github.com/gofrs/uuid"
 	"github.com/kralamoure/d1"
-	"github.com/kralamoure/d1/filter"
-	"github.com/kralamoure/d1/typ"
 	"github.com/kralamoure/d1proto/enum"
 	"github.com/kralamoure/d1proto/msgcli"
 	"github.com/kralamoure/d1proto/msgsvr"
@@ -52,7 +50,7 @@ func (s *session) login(ctx context.Context) error {
 		return errEndOfService
 	}
 
-	account, err := s.svr.svc.Account(ctx, filter.AccountNameEQ(typ.AccountName(s.credential.Username)))
+	account, err := s.svr.svc.AccountByName(ctx, s.credential.Username)
 	if err != nil {
 		s.sendMsg(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AccessDenied,
@@ -60,7 +58,7 @@ func (s *session) login(ctx context.Context) error {
 		return err
 	}
 
-	user, err := s.svr.svc.User(ctx, filter.UserIdEQ(account.UserId))
+	user, err := s.svr.svc.User(ctx, account.UserId)
 	if err != nil {
 		return err
 	}
@@ -109,7 +107,7 @@ func (s *session) login(ctx context.Context) error {
 	return nil
 }
 
-func (s *session) controlAccount(accountId int) error {
+func (s *session) controlAccount(accountId string) error {
 	s.svr.mu.Lock()
 	defer s.svr.mu.Unlock()
 	for sess := range s.svr.sessions {
@@ -151,9 +149,9 @@ func (s *session) handleAccountQueuePosition(ctx context.Context) error {
 }
 
 func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.AccountSearchForFriend) error {
-	user, err := s.svr.svc.User(ctx, filter.UserNicknameEQ(typ.Nickname(m.Pseudo)))
+	user, err := s.svr.svc.UserByNickname(ctx, m.Pseudo)
 	if err != nil {
-		if errors.Is(err, d1.ErrResourceNotFound) {
+		if errors.Is(err, d1.ErrNotFound) {
 			s.sendMsg(msgsvr.AccountFriendServerList{})
 			return nil
 		} else {
@@ -161,7 +159,7 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 		}
 	}
 
-	accounts, err := s.svr.svc.Accounts(ctx, filter.AccountUserIdEQ(user.Id))
+	accounts, err := s.svr.svc.AccountsByUserId(ctx, user.Id)
 	if err != nil {
 		return err
 	}
@@ -169,7 +167,7 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 	serverIdQty := make(map[int]int)
 
 	for _, account := range accounts {
-		characters, err := s.svr.svc.Characters(ctx, filter.CharacterAccountIdEQ(account.Id))
+		characters, err := s.svr.svc.CharactersByAccountId(ctx, account.Id)
 		if err != nil {
 			return err
 		}
@@ -194,14 +192,14 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 }
 
 func (s *session) handleAccountGetServersList(ctx context.Context) error {
-	account, err := s.svr.svc.Account(ctx, filter.AccountIdEQ(s.accountId))
+	account, err := s.svr.svc.Account(ctx, s.accountId)
 	if err != nil {
 		return err
 	}
 
 	serverIdQty := make(map[int]int)
 
-	characters, err := s.svr.svc.Characters(ctx, filter.CharacterAccountIdEQ(s.accountId))
+	characters, err := s.svr.svc.CharactersByAccountId(ctx, s.accountId)
 	if err != nil {
 		return err
 	}
@@ -220,7 +218,7 @@ func (s *session) handleAccountGetServersList(ctx context.Context) error {
 	sort.Slice(serverCharacters, func(i, j int) bool { return serverCharacters[i].Id < serverCharacters[j].Id })
 
 	s.sendMsg(msgsvr.AccountServersListSuccess{
-		Subscription:      account.SubscribedUntil,
+		Subscription:      account.Subscription,
 		ServersCharacters: serverCharacters,
 	})
 
@@ -228,7 +226,7 @@ func (s *session) handleAccountGetServersList(ctx context.Context) error {
 }
 
 func (s *session) handleAccountSetServer(ctx context.Context, m msgcli.AccountSetServer) error {
-	gameServer, err := s.svr.svc.GameServer(ctx, filter.GameServerIdEQ(m.Id))
+	gameServer, err := s.svr.svc.GameServer(ctx, m.Id)
 	if err != nil {
 		return err
 	}
