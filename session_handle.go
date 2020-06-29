@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"sort"
-	"time"
 
 	"github.com/alexedwards/argon2id"
-	"github.com/gofrs/uuid"
 	"github.com/kralamoure/d1"
 	"github.com/kralamoure/d1proto/enum"
 	"github.com/kralamoure/d1proto/msgcli"
@@ -231,16 +229,9 @@ func (s *session) handleAccountSetServer(ctx context.Context, m msgcli.AccountSe
 		return err
 	}
 
-	ticketId, err := uuid.NewV4()
-	if err != nil {
-		return err
-	}
-
-	_, err = s.svr.svc.CreateTicket(ctx, d1.Ticket{
-		Id:           ticketId.String(),
+	id, err := s.svr.svc.CreateTicket(ctx, d1.Ticket{
 		AccountId:    s.accountId,
 		GameServerId: m.Id,
-		Created:      time.Now().UTC(),
 	})
 	if err != nil {
 		return err
@@ -249,7 +240,7 @@ func (s *session) handleAccountSetServer(ctx context.Context, m msgcli.AccountSe
 	s.sendMsg(msgsvr.AccountSelectServerPlainSuccess{
 		Host:   gameServer.Host,
 		Port:   gameServer.Port,
-		Ticket: ticketId.String(),
+		Ticket: id,
 	})
 
 	return errEndOfService
