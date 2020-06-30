@@ -5,8 +5,8 @@ go 1.14
 require (
 	github.com/alexedwards/argon2id v0.0.0-20200522061839-9369edc04b05
 	github.com/jackc/pgx/v4 v4.7.1
-	github.com/kralamoure/d1 v0.0.0-20200629221855-a9d28fc77833
-	github.com/kralamoure/d1postgres v0.0.0-20200629222112-f5338141521c
+	github.com/kralamoure/d1 v0.0.0-20200630061826-f899cc7d0b2f
+	github.com/kralamoure/d1postgres v0.0.0-20200630061916-d5f90e25a104
 	github.com/kralamoure/d1proto v0.0.0-20200624185805-884b13b7ab25
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/pflag v1.0.5
