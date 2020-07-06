@@ -9,19 +9,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kralamoure/d1/service/login"
+	"github.com/happybydefault/logger"
+	"github.com/kralamoure/d1/d1svc"
 	"github.com/kralamoure/d1proto/msgsvr"
 	"github.com/kralamoure/d1proto/typ"
+	"github.com/kralamoure/dofus/dofussvc"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
 type Server struct {
-	logger      *zap.Logger
+	logger      logger.Logger
 	addr        *net.TCPAddr
 	connTimeout time.Duration
 	ticketDur   time.Duration
-	svc         *login.Service
+	dofus       *dofussvc.Service
+	d1          *d1svc.Service
 
 	mu       sync.Mutex
 	ln       *net.TCPListener
@@ -263,7 +266,7 @@ func (s *Server) sendUpdatedHosts(hosts msgsvr.AccountHosts) {
 }
 
 func (s *Server) fetchHosts(ctx context.Context) (string, error) {
-	gameServers, err := s.svc.GameServers(ctx)
+	gameServers, err := s.d1.GameServers(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -289,7 +292,7 @@ func (s *Server) fetchHosts(ctx context.Context) (string, error) {
 }
 
 func (s *Server) deleteOldTickets(ctx context.Context) (count int, err error) {
-	return s.svc.DeleteTickets(ctx, time.Now().UTC().Add(-s.ticketDur))
+	return s.d1.DeleteTickets(ctx, time.Now().UTC().Add(-s.ticketDur))
 }
 
 func (s *Server) trackSession(sess *session, add bool) {

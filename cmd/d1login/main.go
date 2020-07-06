@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/kralamoure/d1/service/login"
-	"github.com/kralamoure/d1postgres"
+	"github.com/kralamoure/d1/d1svc"
+	"github.com/kralamoure/d1pg"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
@@ -38,7 +38,7 @@ var (
 
 var (
 	flagSet *pflag.FlagSet
-	logger  *zap.Logger
+	logger  *zap.SugaredLogger
 )
 
 func main() {
@@ -61,20 +61,25 @@ func main() {
 	}
 
 	if debug {
-		logger, err = zap.NewDevelopment()
+		tmp, err := zap.NewDevelopment()
 		if err != nil {
-			l.Fatalln(err)
+			l.Println(err)
+			os.Exit(1)
 		}
+		logger = tmp.Sugar()
 	} else {
-		logger, err = zap.NewProduction()
+		tmp, err := zap.NewProduction()
 		if err != nil {
-			l.Fatalln(err)
+			l.Println(err)
+			os.Exit(1)
 		}
+		logger = tmp.Sugar()
 	}
 
 	err = run()
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Error(err)
+		os.Exit(1)
 	}
 }
 
@@ -111,12 +116,12 @@ func run() error {
 	}
 	defer pool.Close()
 
-	repo, err := d1postgres.NewLoginRepo(pool)
+	repo, err := d1pg.NewRepo(pool)
 	if err != nil {
 		return err
 	}
 
-	svc, err := login.NewService(login.Config{
+	svc, err := d1svc.NewService(d1svc.Config{
 		Repo:   repo,
 		Logger: logger.Named("service"),
 	})
@@ -127,8 +132,8 @@ func run() error {
 	svr, err := d1login.NewServer(d1login.Config{
 		Addr:        serverAddr,
 		ConnTimeout: connTimeout,
-		Service:     svc,
-		Logger:      logger.Named("server"),
+		D1:          svc,
+		Logger:      logger.Named("server"), // TODO: zap Named with logger interface
 	})
 	if err != nil {
 		return err

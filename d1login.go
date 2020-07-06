@@ -5,8 +5,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/kralamoure/d1/service/login"
-	"go.uber.org/zap"
+	"github.com/happybydefault/logger"
+	"github.com/kralamoure/d1/d1svc"
+	"github.com/kralamoure/dofus/dofussvc"
 )
 
 const Version = "v0.18.0"
@@ -15,8 +16,9 @@ type Config struct {
 	Addr        string
 	ConnTimeout time.Duration
 	TicketDur   time.Duration
-	Service     *login.Service
-	Logger      *zap.Logger
+	Dofus       *dofussvc.Service
+	D1          *d1svc.Service
+	Logger      logger.Logger
 }
 
 func NewServer(c Config) (*Server, error) {
@@ -26,11 +28,14 @@ func NewServer(c Config) (*Server, error) {
 	if c.TicketDur <= 0 {
 		c.TicketDur = 20 * time.Second
 	}
-	if c.Service == nil {
-		return nil, errors.New("nil service")
+	if c.Dofus == nil {
+		return nil, errors.New("nil dofus service")
+	}
+	if c.D1 == nil {
+		return nil, errors.New("nil d1 service")
 	}
 	if c.Logger == nil {
-		c.Logger = zap.NewNop()
+		c.Logger = logger.Noop{}
 	}
 	addr, err := net.ResolveTCPAddr("tcp4", c.Addr)
 	if err != nil {
@@ -41,7 +46,8 @@ func NewServer(c Config) (*Server, error) {
 		addr:        addr,
 		connTimeout: c.ConnTimeout,
 		ticketDur:   c.TicketDur,
-		svc:         c.Service,
+		dofus:       c.Dofus,
+		d1:          c.D1,
 	}
 	return s, nil
 }

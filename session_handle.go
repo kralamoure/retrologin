@@ -48,7 +48,7 @@ func (s *session) login(ctx context.Context) error {
 		return errEndOfService
 	}
 
-	account, err := s.svr.svc.AccountByName(ctx, s.credential.Username)
+	account, err := s.svr.dofus.AccountByName(ctx, s.credential.Username)
 	if err != nil {
 		s.sendMsg(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AccessDenied,
@@ -56,7 +56,7 @@ func (s *session) login(ctx context.Context) error {
 		return err
 	}
 
-	user, err := s.svr.svc.User(ctx, account.UserId)
+	user, err := s.svr.dofus.User(ctx, account.UserId)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (s *session) handleAccountQueuePosition(ctx context.Context) error {
 }
 
 func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.AccountSearchForFriend) error {
-	user, err := s.svr.svc.UserByNickname(ctx, m.Pseudo)
+	user, err := s.svr.dofus.UserByNickname(ctx, m.Pseudo)
 	if err != nil {
 		if errors.Is(err, d1.ErrNotFound) {
 			s.sendMsg(msgsvr.AccountFriendServerList{})
@@ -157,7 +157,7 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 		}
 	}
 
-	accounts, err := s.svr.svc.AccountsByUserId(ctx, user.Id)
+	accounts, err := s.svr.dofus.AccountsByUserId(ctx, user.Id)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 	serverIdQty := make(map[int]int)
 
 	for _, account := range accounts {
-		characters, err := s.svr.svc.CharactersByAccountId(ctx, account.Id)
+		characters, err := s.svr.d1.CharactersByAccountId(ctx, account.Id)
 		if err != nil {
 			return err
 		}
@@ -190,14 +190,14 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 }
 
 func (s *session) handleAccountGetServersList(ctx context.Context) error {
-	account, err := s.svr.svc.Account(ctx, s.accountId)
+	account, err := s.svr.dofus.Account(ctx, s.accountId)
 	if err != nil {
 		return err
 	}
 
 	serverIdQty := make(map[int]int)
 
-	characters, err := s.svr.svc.CharactersByAccountId(ctx, s.accountId)
+	characters, err := s.svr.d1.CharactersByAccountId(ctx, s.accountId)
 	if err != nil {
 		return err
 	}
@@ -224,12 +224,12 @@ func (s *session) handleAccountGetServersList(ctx context.Context) error {
 }
 
 func (s *session) handleAccountSetServer(ctx context.Context, m msgcli.AccountSetServer) error {
-	gameServer, err := s.svr.svc.GameServer(ctx, m.Id)
+	gameServer, err := s.svr.d1.GameServer(ctx, m.Id)
 	if err != nil {
 		return err
 	}
 
-	id, err := s.svr.svc.CreateTicket(ctx, d1.Ticket{
+	id, err := s.svr.d1.CreateTicket(ctx, d1.Ticket{
 		AccountId:    s.accountId,
 		GameServerId: m.Id,
 	})
