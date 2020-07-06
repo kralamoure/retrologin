@@ -13,7 +13,6 @@ import (
 	"github.com/kralamoure/d1proto/msgcli"
 	"github.com/kralamoure/d1proto/msgsvr"
 	"go.uber.org/atomic"
-	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
@@ -70,30 +69,30 @@ func (s *session) receivePkts(ctx context.Context) error {
 func (s *session) handlePkt(ctx context.Context, pkt string) error {
 	defer func() {
 		if r := recover(); r != nil {
-			s.svr.logger.Error("recovered from panic",
-				zap.String("recover", fmt.Sprint(r)),
+			s.svr.logger.Errorw("recovered from panic",
+				"recover", r,
 			)
 		}
 	}()
 
 	id, ok := d1proto.MsgCliIdByPkt(pkt)
 	name, _ := d1proto.MsgCliNameByID(id)
-	s.svr.logger.Info("received packet from client",
-		zap.String("client_address", s.conn.RemoteAddr().String()),
-		zap.String("message_name", name),
-		zap.String("packet", pkt),
+	s.svr.logger.Infow("received packet from client",
+		"client_address", s.conn.RemoteAddr().String(),
+		"message_name", name,
+		"packet", pkt,
 	)
 	if !ok {
-		s.svr.logger.Debug("unknown packet",
-			zap.String("client_address", s.conn.RemoteAddr().String()),
+		s.svr.logger.Debugw("unknown packet",
+			"client_address", s.conn.RemoteAddr().String(),
 		)
 		return errEndOfService
 	}
 	extra := strings.TrimPrefix(pkt, string(id))
 
 	if !s.frameMsg(id) {
-		s.svr.logger.Debug("invalid frame",
-			zap.String("client_address", s.conn.RemoteAddr().String()),
+		s.svr.logger.Debugw("invalid frame",
+			"client_address", s.conn.RemoteAddr().String(),
 		)
 		return errEndOfService
 	}
@@ -183,8 +182,8 @@ func (s *session) sendMsg(msg d1proto.MsgSvr) {
 	pkt, err := msg.Serialized()
 	if err != nil {
 		name, _ := d1proto.MsgSvrNameByID(msg.ProtocolId())
-		s.svr.logger.Error("could not serialize message",
-			zap.String("name", name),
+		s.svr.logger.Errorw("could not serialize message",
+			"name", name,
 		)
 		return
 	}
@@ -194,10 +193,10 @@ func (s *session) sendMsg(msg d1proto.MsgSvr) {
 func (s *session) sendPkt(pkt string) {
 	id, _ := d1proto.MsgSvrIdByPkt(pkt)
 	name, _ := d1proto.MsgSvrNameByID(id)
-	s.svr.logger.Info("sent packet to client",
-		zap.String("client_address", s.conn.RemoteAddr().String()),
-		zap.String("message_name", name),
-		zap.String("packet", pkt),
+	s.svr.logger.Infow("sent packet to client",
+		"client_address", s.conn.RemoteAddr().String(),
+		"message_name", name,
+		"packet", pkt,
 	)
 	fmt.Fprint(s.conn, pkt+"\x00")
 }

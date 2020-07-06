@@ -14,6 +14,8 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/kralamoure/d1/d1svc"
 	"github.com/kralamoure/d1pg"
+	"github.com/kralamoure/dofus/dofussvc"
+	"github.com/kralamoure/dofuspg"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
@@ -116,14 +118,27 @@ func run() error {
 	}
 	defer pool.Close()
 
-	repo, err := d1pg.NewRepo(pool)
+	dofusRepo, err := dofuspg.NewRepo(pool)
 	if err != nil {
 		return err
 	}
 
-	svc, err := d1svc.NewService(d1svc.Config{
-		Repo:   repo,
-		Logger: logger.Named("service"),
+	d1Repo, err := d1pg.NewRepo(pool)
+	if err != nil {
+		return err
+	}
+
+	dofusSvc, err := dofussvc.NewService(dofussvc.Config{
+		Repo:   dofusRepo,
+		Logger: logger.Named("dofussvc"),
+	})
+	if err != nil {
+		return err
+	}
+
+	d1Svc, err := d1svc.NewService(d1svc.Config{
+		Repo:   d1Repo,
+		Logger: logger.Named("d1svc"),
 	})
 	if err != nil {
 		return err
@@ -132,7 +147,8 @@ func run() error {
 	svr, err := d1login.NewServer(d1login.Config{
 		Addr:        serverAddr,
 		ConnTimeout: connTimeout,
-		D1:          svc,
+		Dofus:       dofusSvc,
+		D1:          d1Svc,
 		Logger:      logger.Named("server"), // TODO: zap Named with logger interface
 	})
 	if err != nil {
@@ -160,8 +176,8 @@ func run() error {
 	select {
 	case sig := <-sigCh:
 		signal.Stop(sigCh)
-		logger.Info("received signal",
-			zap.String("signal", sig.String()),
+		logger.Infow("received signal",
+			"signal", sig.String(),
 		)
 	case err := <-errCh:
 		selErr = err

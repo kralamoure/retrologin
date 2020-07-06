@@ -11,7 +11,7 @@ import (
 	"github.com/kralamoure/d1proto/msgcli"
 	"github.com/kralamoure/d1proto/msgsvr"
 	prototyp "github.com/kralamoure/d1proto/typ"
-	"go.uber.org/zap"
+	"github.com/kralamoure/dofus"
 )
 
 func (s *session) login(ctx context.Context) error {
@@ -24,26 +24,26 @@ func (s *session) login(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		s.svr.logger.Debug("wrong version",
-			zap.String("client_address", s.conn.RemoteAddr().String()),
-			zap.String("version", versionStr),
+		s.svr.logger.Debugw("wrong version",
+			"client_address", s.conn.RemoteAddr().String(),
+			"version", versionStr,
 		)
 		return errEndOfService
 	}
 
 	if s.credential.CryptoMethod != 1 {
-		s.svr.logger.Debug("unhandled crypto method",
-			zap.String("client_address", s.conn.RemoteAddr().String()),
-			zap.Int("crypto_method", s.credential.CryptoMethod),
+		s.svr.logger.Debugw("unhandled crypto method",
+			"client_address", s.conn.RemoteAddr().String(),
+			"crypto_method", s.credential.CryptoMethod,
 		)
 		return errEndOfService
 	}
 
 	password, err := decryptedPassword(s.credential.Hash, s.salt)
 	if err != nil {
-		s.svr.logger.Debug("could not decrypt password",
-			zap.String("client_address", s.conn.RemoteAddr().String()),
-			zap.Error(err),
+		s.svr.logger.Debugw("could not decrypt password",
+			"error", err,
+			"client_address", s.conn.RemoteAddr().String(),
 		)
 		return errEndOfService
 	}
@@ -70,8 +70,8 @@ func (s *session) login(ctx context.Context) error {
 		s.sendMsg(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AccessDenied,
 		})
-		s.svr.logger.Debug("wrong password",
-			zap.String("client_address", s.conn.RemoteAddr().String()),
+		s.svr.logger.Debugw("wrong password",
+			"client_address", s.conn.RemoteAddr().String(),
 		)
 		return errEndOfService
 	}
@@ -81,9 +81,9 @@ func (s *session) login(ctx context.Context) error {
 		s.sendMsg(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AlreadyLogged,
 		})
-		s.svr.logger.Debug("could not control account",
-			zap.String("client_address", s.conn.RemoteAddr().String()),
-			zap.Error(err),
+		s.svr.logger.Debugw("could not control account",
+			"error", err,
+			"client_address", s.conn.RemoteAddr().String(),
 		)
 		return errEndOfService
 	}
@@ -149,7 +149,7 @@ func (s *session) handleAccountQueuePosition(ctx context.Context) error {
 func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.AccountSearchForFriend) error {
 	user, err := s.svr.dofus.UserByNickname(ctx, m.Pseudo)
 	if err != nil {
-		if errors.Is(err, d1.ErrNotFound) {
+		if errors.Is(err, dofus.ErrNotFound) {
 			s.sendMsg(msgsvr.AccountFriendServerList{})
 			return nil
 		} else {

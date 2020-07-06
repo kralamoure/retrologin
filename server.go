@@ -3,6 +3,7 @@ package d1login
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sort"
@@ -15,7 +16,6 @@ import (
 	"github.com/kralamoure/d1proto/typ"
 	"github.com/kralamoure/dofus/dofussvc"
 	"go.uber.org/atomic"
-	"go.uber.org/zap"
 )
 
 type Server struct {
@@ -49,12 +49,12 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	}
 	defer func() {
 		ln.Close()
-		s.logger.Info("stopped listening",
-			zap.String("address", ln.Addr().String()),
+		s.logger.Infow("stopped listening",
+			"address", ln.Addr().String(),
 		)
 	}()
-	s.logger.Info("listening",
-		zap.String("address", ln.Addr().String()),
+	s.logger.Infow("listening",
+		"address", ln.Addr().String(),
 	)
 	s.ln = ln
 
@@ -128,9 +128,8 @@ func (s *Server) acceptLoop(ctx context.Context) error {
 					errors.Is(err, io.EOF) ||
 					errors.Is(err, context.Canceled) ||
 					errors.Is(err, errEndOfService)) {
-					s.logger.Error("error while handling client connection",
-						zap.Error(err),
-						zap.String("client_address", conn.RemoteAddr().String()),
+					s.logger.Errorw(fmt.Errorf("error while handling client connection: %w", err).Error(),
+						"client_address", conn.RemoteAddr().String(),
 					)
 				}
 			}
@@ -158,12 +157,12 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 
 	defer func() {
 		conn.Close()
-		s.logger.Info("client disconnected",
-			zap.String("client_address", conn.RemoteAddr().String()),
+		s.logger.Infow("client disconnected",
+			"client_address", conn.RemoteAddr().String(),
 		)
 	}()
 	s.logger.Info("client connected",
-		zap.String("client_address", conn.RemoteAddr().String()),
+		"client_address", conn.RemoteAddr().String(),
 	)
 
 	err = conn.SetKeepAlivePeriod(1 * time.Minute)
@@ -244,8 +243,8 @@ func (s *Server) watchTickets(ctx context.Context, d time.Duration) error {
 				return err
 			}
 			if count > 0 {
-				s.logger.Debug("deleted old tickets",
-					zap.Int("count", count),
+				s.logger.Debugw("deleted old tickets",
+					"count", count,
 				)
 			}
 		case <-ctx.Done():
