@@ -149,7 +149,7 @@ func run() error {
 		ConnTimeout: connTimeout,
 		Dofus:       dofusSvc,
 		D1:          d1Svc,
-		Logger:      logger.Named("server"), // TODO: zap Named with logger interface
+		Logger:      logger.Named("server"),
 	})
 	if err != nil {
 		return err
