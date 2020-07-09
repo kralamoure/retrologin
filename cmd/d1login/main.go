@@ -170,7 +170,6 @@ func run() error {
 			case <-ctx.Done():
 			}
 		}
-		cancel()
 	}()
 
 	var selErr error
