@@ -165,7 +165,7 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 	serverIdQty := make(map[int]int)
 
 	for _, account := range accounts {
-		characters, err := s.svr.d1.CharactersByAccountId(ctx, account.Id)
+		characters, err := s.svr.d1.AllCharactersByAccountId(ctx, account.Id)
 		if err != nil {
 			return err
 		}
@@ -197,7 +197,7 @@ func (s *session) handleAccountGetServersList(ctx context.Context) error {
 
 	serverIdQty := make(map[int]int)
 
-	characters, err := s.svr.d1.CharactersByAccountId(ctx, s.accountId)
+	characters, err := s.svr.d1.AllCharactersByAccountId(ctx, s.accountId)
 	if err != nil {
 		return err
 	}
