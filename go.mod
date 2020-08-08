@@ -31,3 +31,7 @@ replace github.com/kralamoure/d1 => ../d1
 replace github.com/kralamoure/d1pg => ../d1pg
 
 replace github.com/kralamoure/d1proto => ../d1proto
+
+replace github.com/kralamoure/dofus => ../dofus
+
+replace github.com/kralamoure/dofuspg => ../dofuspg

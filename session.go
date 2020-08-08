@@ -37,6 +37,11 @@ type session struct {
 	accountId string
 }
 
+type msgOut interface {
+	ProtocolId() (id d1proto.MsgSvrId)
+	Serialized() (extra string, err error)
+}
+
 func (s *session) receivePkts(ctx context.Context) error {
 	lim := rate.NewLimiter(1, 5)
 
@@ -178,7 +183,7 @@ func (s *session) frameMsg(id d1proto.MsgCliId) bool {
 	return true
 }
 
-func (s *session) sendMsg(msg d1proto.MsgSvr) {
+func (s *session) sendMsg(msg msgOut) {
 	pkt, err := msg.Serialized()
 	if err != nil {
 		name, _ := d1proto.MsgSvrNameByID(msg.ProtocolId())
