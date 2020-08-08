@@ -1,15 +1,20 @@
-FROM golang:1.14.4-alpine3.12 AS builder
+FROM golang:1.16.2-buster AS builder
 
-RUN apk add git
 RUN git config --global credential.helper store
 COPY .git-credentials /root/.git-credentials
 
 WORKDIR /app
 COPY . .
 
+RUN go env -w GOPRIVATE=github.com/kralamoure
 RUN go install -v ./...
 
-FROM alpine:3.12.0
+FROM ubuntu:20.04
+
+LABEL org.opencontainers.image.source="https://github.com/kralamoure/d1login"
+
+RUN apt-get update && apt-get install -y
+
 WORKDIR /app
 COPY --from=builder /go/bin/ .
 

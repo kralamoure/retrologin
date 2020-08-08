@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"sort"
 	"sync"
 	"time"
@@ -26,9 +27,10 @@ type Server struct {
 	dofus       *dofussvc.Service
 	d1          *d1svc.Service
 
-	mu       sync.Mutex
-	ln       *net.TCPListener
-	sessions map[*session]struct{}
+	mu                 sync.Mutex
+	ln                 *net.TCPListener
+	sessions           map[*session]struct{}
+	sessionByAccountId map[string]*session
 
 	hosts atomic.String
 }
@@ -104,6 +106,21 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	}
 }
 
+func (s *Server) controlAccount(accountId string, sess *session) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	currentSess, ok := s.sessionByAccountId[accountId]
+	if ok {
+		currentSess.conn.Close()
+		return errors.New("already logged in")
+	}
+
+	s.sessionByAccountId[accountId] = sess
+
+	return nil
+}
+
 func (s *Server) acceptLoop(ctx context.Context) error {
 	var wg sync.WaitGroup
 	defer wg.Wait()
@@ -119,15 +136,14 @@ func (s *Server) acceptLoop(ctx context.Context) error {
 			defer wg.Done()
 			err := s.handleClientConn(ctx, conn)
 			if err != nil {
-				var isTimeout bool
-				netErr, ok := err.(net.Error)
-				if ok {
-					isTimeout = netErr.Timeout()
-				}
-				if !(isTimeout ||
+				if errors.Is(err, os.ErrDeadlineExceeded) ||
 					errors.Is(err, io.EOF) ||
 					errors.Is(err, context.Canceled) ||
-					errors.Is(err, errEndOfService)) {
+					errors.Is(err, errInvalidRequest) {
+					s.logger.Debugw(fmt.Errorf("error while handling client connection: %w", err).Error(),
+						"client_address", conn.RemoteAddr().String(),
+					)
+				} else {
 					s.logger.Errorw(fmt.Errorf("error while handling client connection: %w", err).Error(),
 						"client_address", conn.RemoteAddr().String(),
 					)
@@ -173,7 +189,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	if err != nil {
 		return err
 	}
-	err = conn.SetDeadline(time.Now().UTC().Add(s.connTimeout))
+	err = conn.SetReadDeadline(time.Now().UTC().Add(s.connTimeout))
 	if err != nil {
 		return err
 	}
@@ -186,7 +202,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := sess.receivePkts(ctx)
+		err := sess.receivePackets(ctx)
 		if err != nil {
 			select {
 			case errCh <- err:
@@ -195,12 +211,14 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 		}
 	}()
 
-	sess.sendMsg(msgsvr.AksHelloConnect{Salt: sess.salt})
+	sess.sendMessage(msgsvr.AksHelloConnect{Salt: sess.salt})
 
 	select {
 	case err := <-errCh:
 		return err
 	case <-ctx.Done():
+		sess.sendMessage(msgsvr.AksServerMessage{Value: "04"})
+
 		return ctx.Err()
 	}
 }
@@ -260,7 +278,7 @@ func (s *Server) sendUpdatedHosts(hosts msgsvr.AccountHosts) {
 		if sess.status.Load() != statusIdle {
 			continue
 		}
-		sess.sendMsg(hosts)
+		sess.sendMessage(hosts)
 	}
 }
 
@@ -297,12 +315,11 @@ func (s *Server) deleteOldTickets(ctx context.Context) (count int, err error) {
 func (s *Server) trackSession(sess *session, add bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if add {
-		if s.sessions == nil {
-			s.sessions = make(map[*session]struct{})
-		}
 		s.sessions[sess] = struct{}{}
 	} else {
+		delete(s.sessionByAccountId, sess.accountId)
 		delete(s.sessions, sess)
 	}
 }

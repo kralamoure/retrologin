@@ -42,12 +42,14 @@ func NewServer(c Config) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
-		logger:      c.Logger,
-		addr:        addr,
-		connTimeout: c.ConnTimeout,
-		ticketDur:   c.TicketDur,
-		dofus:       c.Dofus,
-		d1:          c.D1,
+		logger:             c.Logger,
+		addr:               addr,
+		connTimeout:        c.ConnTimeout,
+		ticketDur:          c.TicketDur,
+		dofus:              c.Dofus,
+		d1:                 c.D1,
+		sessions:           make(map[*session]struct{}),
+		sessionByAccountId: make(map[string]*session),
 	}
 	return s, nil
 }
