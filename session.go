@@ -154,7 +154,7 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 			return err
 		}
 	default:
-		s.sendMsg(msgsvr.BasicsNoticed{})
+		s.sendMsg(msgsvr.BasicsNothing{})
 	}
 
 	return nil
