@@ -83,7 +83,15 @@ func (s *session) login(ctx context.Context) error {
 		s.sendMessage(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AccessDenied,
 		})
-		return err
+		if errors.Is(err, d1proto.ErrNotFound) {
+			s.svr.logger.Debugw("could not find account",
+				"error", err,
+				"client_address", s.conn.RemoteAddr().String(),
+			)
+			return nil
+		} else {
+			return err
+		}
 	}
 
 	user, err := s.svr.dofus.User(ctx, account.UserId)
