@@ -186,7 +186,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := sess.receivePkts(ctx)
+		err := sess.receivePackets(ctx)
 		if err != nil {
 			select {
 			case errCh <- err:
@@ -195,7 +195,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 		}
 	}()
 
-	sess.sendMsg(msgsvr.AksHelloConnect{Salt: sess.salt})
+	sess.sendMessage(msgsvr.AksHelloConnect{Salt: sess.salt})
 
 	select {
 	case err := <-errCh:
@@ -260,7 +260,7 @@ func (s *Server) sendUpdatedHosts(hosts msgsvr.AccountHosts) {
 		if sess.status.Load() != statusIdle {
 			continue
 		}
-		sess.sendMsg(hosts)
+		sess.sendMessage(hosts)
 	}
 }
 

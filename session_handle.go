@@ -16,7 +16,7 @@ import (
 
 func (s *session) login(ctx context.Context) error {
 	if s.version.Major != 1 || s.version.Minor < 29 {
-		s.sendMsg(msgsvr.AccountLoginError{
+		s.sendMessage(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.BadVersion,
 			Extra:  "^1.29.0",
 		})
@@ -50,7 +50,7 @@ func (s *session) login(ctx context.Context) error {
 
 	account, err := s.svr.dofus.AccountByName(ctx, s.credential.Username)
 	if err != nil {
-		s.sendMsg(msgsvr.AccountLoginError{
+		s.sendMessage(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AccessDenied,
 		})
 		return err
@@ -67,7 +67,7 @@ func (s *session) login(ctx context.Context) error {
 	}
 
 	if !match {
-		s.sendMsg(msgsvr.AccountLoginError{
+		s.sendMessage(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AccessDenied,
 		})
 		s.svr.logger.Debugw("wrong password",
@@ -78,7 +78,7 @@ func (s *session) login(ctx context.Context) error {
 
 	err = s.controlAccount(account.Id)
 	if err != nil {
-		s.sendMsg(msgsvr.AccountLoginError{
+		s.sendMessage(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AlreadyLogged,
 		})
 		s.svr.logger.Debugw("could not control account",
@@ -88,18 +88,18 @@ func (s *session) login(ctx context.Context) error {
 		return errEndOfService
 	}
 
-	s.sendMsg(msgsvr.AccountPseudo{Value: string(user.Nickname)})
-	s.sendMsg(msgsvr.AccountCommunity{Id: int(user.Community)})
-	s.sendMsg(msgsvr.AccountSecretQuestion{Value: user.SecretQuestion})
+	s.sendMessage(msgsvr.AccountPseudo{Value: string(user.Nickname)})
+	s.sendMessage(msgsvr.AccountCommunity{Id: int(user.Community)})
+	s.sendMessage(msgsvr.AccountSecretQuestion{Value: user.SecretQuestion})
 
 	hosts := msgsvr.AccountHosts{}
 	err = hosts.Deserialize(s.svr.hosts.Load())
 	if err != nil {
 		return err
 	}
-	s.sendMsg(hosts)
+	s.sendMessage(hosts)
 
-	s.sendMsg(msgsvr.AccountLoginSuccess{Authorized: account.Admin})
+	s.sendMessage(msgsvr.AccountLoginSuccess{Authorized: account.Admin})
 
 	s.status.Store(statusIdle)
 	return nil
@@ -131,7 +131,7 @@ func (s *session) handleAccountCredential(m msgcli.AccountCredential) error {
 }
 
 func (s *session) handleAccountQueuePosition(ctx context.Context) error {
-	s.sendMsg(msgsvr.AccountNewQueue{
+	s.sendMessage(msgsvr.AccountNewQueue{
 		Position:    1,
 		TotalAbo:    0,
 		TotalNonAbo: 1,
@@ -150,7 +150,7 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 	user, err := s.svr.dofus.UserByNickname(ctx, m.Pseudo)
 	if err != nil {
 		if errors.Is(err, dofus.ErrNotFound) {
-			s.sendMsg(msgsvr.AccountFriendServerList{})
+			s.sendMessage(msgsvr.AccountFriendServerList{})
 			return nil
 		} else {
 			return err
@@ -184,7 +184,7 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 	}
 	sort.Slice(serverCharacters, func(i, j int) bool { return serverCharacters[i].Id < serverCharacters[j].Id })
 
-	s.sendMsg(msgsvr.AccountFriendServerList{ServersCharacters: serverCharacters})
+	s.sendMessage(msgsvr.AccountFriendServerList{ServersCharacters: serverCharacters})
 
 	return nil
 }
@@ -215,7 +215,7 @@ func (s *session) handleAccountGetServersList(ctx context.Context) error {
 	}
 	sort.Slice(serverCharacters, func(i, j int) bool { return serverCharacters[i].Id < serverCharacters[j].Id })
 
-	s.sendMsg(msgsvr.AccountServersListSuccess{
+	s.sendMessage(msgsvr.AccountServersListSuccess{
 		Subscription:      account.Subscription,
 		ServersCharacters: serverCharacters,
 	})
@@ -237,7 +237,7 @@ func (s *session) handleAccountSetServer(ctx context.Context, m msgcli.AccountSe
 		return err
 	}
 
-	s.sendMsg(msgsvr.AccountSelectServerPlainSuccess{
+	s.sendMessage(msgsvr.AccountSelectServerPlainSuccess{
 		Host:   gameServer.Host,
 		Port:   gameServer.Port,
 		Ticket: id,

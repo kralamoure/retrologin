@@ -42,7 +42,7 @@ type msgOut interface {
 	Serialized() (extra string, err error)
 }
 
-func (s *session) receivePkts(ctx context.Context) error {
+func (s *session) receivePackets(ctx context.Context) error {
 	lim := rate.NewLimiter(1, 5)
 
 	rd := bufio.NewReaderSize(s.conn, 256)
@@ -64,14 +64,14 @@ func (s *session) receivePkts(ctx context.Context) error {
 			return err
 		}
 
-		err = s.handlePkt(ctx, pkt)
+		err = s.handlePacket(ctx, pkt)
 		if err != nil {
 			return err
 		}
 	}
 }
 
-func (s *session) handlePkt(ctx context.Context, pkt string) error {
+func (s *session) handlePacket(ctx context.Context, pkt string) error {
 	defer func() {
 		if r := recover(); r != nil {
 			s.svr.logger.Errorw("recovered from panic",
@@ -95,12 +95,15 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 	}
 	extra := strings.TrimPrefix(pkt, string(id))
 
-	if !s.frameMsg(id) {
+	if !s.frameMessage(id) {
 		s.svr.logger.Debugw("invalid frame",
 			"client_address", s.conn.RemoteAddr().String(),
 		)
 		return errEndOfService
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	switch id {
 	case d1proto.AccountVersion:
@@ -154,13 +157,13 @@ func (s *session) handlePkt(ctx context.Context, pkt string) error {
 			return err
 		}
 	default:
-		s.sendMsg(msgsvr.BasicsNothing{})
+		s.sendMessage(msgsvr.BasicsNothing{})
 	}
 
 	return nil
 }
 
-func (s *session) frameMsg(id d1proto.MsgCliId) bool {
+func (s *session) frameMessage(id d1proto.MsgCliId) bool {
 	status := s.status.Load()
 	switch status {
 	case statusExpectingAccountVersion:
@@ -183,7 +186,7 @@ func (s *session) frameMsg(id d1proto.MsgCliId) bool {
 	return true
 }
 
-func (s *session) sendMsg(msg msgOut) {
+func (s *session) sendMessage(msg msgOut) {
 	pkt, err := msg.Serialized()
 	if err != nil {
 		name, _ := d1proto.MsgSvrNameByID(msg.ProtocolId())
@@ -192,10 +195,10 @@ func (s *session) sendMsg(msg msgOut) {
 		)
 		return
 	}
-	s.sendPkt(fmt.Sprint(msg.ProtocolId(), pkt))
+	s.sendPacket(fmt.Sprint(msg.ProtocolId(), pkt))
 }
 
-func (s *session) sendPkt(pkt string) {
+func (s *session) sendPacket(pkt string) {
 	id, _ := d1proto.MsgSvrIdByPkt(pkt)
 	name, _ := d1proto.MsgSvrNameByID(id)
 	s.svr.logger.Infow("sent packet to client",
