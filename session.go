@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alexedwards/argon2id"
 	"github.com/kralamoure/d1proto"
+	"github.com/kralamoure/d1proto/enum"
 	"github.com/kralamoure/d1proto/msgcli"
 	"github.com/kralamoure/d1proto/msgsvr"
 	"go.uber.org/atomic"
@@ -40,6 +42,110 @@ type session struct {
 type msgOut interface {
 	ProtocolId() (id d1proto.MsgSvrId)
 	Serialized() (extra string, err error)
+}
+
+func (s *session) login(ctx context.Context) error {
+	if s.version.Major != 1 || s.version.Minor < 29 {
+		s.sendMessage(msgsvr.AccountLoginError{
+			Reason: enum.AccountLoginErrorReason.BadVersion,
+			Extra:  "^1.29.0",
+		})
+		versionStr, err := s.version.Serialized()
+		if err != nil {
+			return err
+		}
+		s.svr.logger.Debugw("wrong version",
+			"client_address", s.conn.RemoteAddr().String(),
+			"version", versionStr,
+		)
+		return errEndOfService
+	}
+
+	if s.credential.CryptoMethod != 1 {
+		s.svr.logger.Debugw("unhandled crypto method",
+			"client_address", s.conn.RemoteAddr().String(),
+			"crypto_method", s.credential.CryptoMethod,
+		)
+		return errEndOfService
+	}
+
+	password, err := decryptedPassword(s.credential.Hash, s.salt)
+	if err != nil {
+		s.svr.logger.Debugw("could not decrypt password",
+			"error", err,
+			"client_address", s.conn.RemoteAddr().String(),
+		)
+		return errEndOfService
+	}
+
+	account, err := s.svr.dofus.AccountByName(ctx, s.credential.Username)
+	if err != nil {
+		s.sendMessage(msgsvr.AccountLoginError{
+			Reason: enum.AccountLoginErrorReason.AccessDenied,
+		})
+		return err
+	}
+
+	user, err := s.svr.dofus.User(ctx, account.UserId)
+	if err != nil {
+		return err
+	}
+
+	match, err := argon2id.ComparePasswordAndHash(password, string(user.Hash))
+	if err != nil {
+		return err
+	}
+
+	if !match {
+		s.sendMessage(msgsvr.AccountLoginError{
+			Reason: enum.AccountLoginErrorReason.AccessDenied,
+		})
+		s.svr.logger.Debugw("wrong password",
+			"client_address", s.conn.RemoteAddr().String(),
+		)
+		return errEndOfService
+	}
+
+	err = s.controlAccount(account.Id)
+	if err != nil {
+		s.sendMessage(msgsvr.AccountLoginError{
+			Reason: enum.AccountLoginErrorReason.AlreadyLogged,
+		})
+		s.svr.logger.Debugw("could not control account",
+			"error", err,
+			"client_address", s.conn.RemoteAddr().String(),
+		)
+		return errEndOfService
+	}
+
+	s.sendMessage(msgsvr.AccountPseudo{Value: string(user.Nickname)})
+	s.sendMessage(msgsvr.AccountCommunity{Id: int(user.Community)})
+	s.sendMessage(msgsvr.AccountSecretQuestion{Value: user.SecretQuestion})
+
+	hosts := msgsvr.AccountHosts{}
+	err = hosts.Deserialize(s.svr.hosts.Load())
+	if err != nil {
+		return err
+	}
+	s.sendMessage(hosts)
+
+	s.sendMessage(msgsvr.AccountLoginSuccess{Authorized: account.Admin})
+
+	s.status.Store(statusIdle)
+	return nil
+}
+
+func (s *session) controlAccount(accountId string) error {
+	s.svr.mu.Lock()
+	defer s.svr.mu.Unlock()
+	for sess := range s.svr.sessions {
+		if sess.accountId == accountId {
+			sess.conn.Close()
+			return errors.New("already logged in")
+		}
+	}
+	s.accountId = accountId
+	return nil
 }
 
 func (s *session) receivePackets(ctx context.Context) error {
