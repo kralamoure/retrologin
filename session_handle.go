@@ -137,5 +137,5 @@ func (s *session) handleAccountSetServer(ctx context.Context, m msgcli.AccountSe
 		Ticket: id,
 	})
 
-	return errEndOfService
+	return errInvalidRequest
 }

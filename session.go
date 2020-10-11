@@ -25,7 +25,7 @@ const (
 	statusIdle
 )
 
-var errEndOfService = errors.New("end of service")
+var errInvalidRequest = errors.New("invalid request")
 
 type session struct {
 	svr    *Server
@@ -93,7 +93,7 @@ func (s *session) handlePacket(ctx context.Context, pkt string) error {
 		s.svr.logger.Debugw("unknown packet",
 			"client_address", s.conn.RemoteAddr().String(),
 		)
-		return errEndOfService
+		return errInvalidRequest
 	}
 	extra := strings.TrimPrefix(pkt, string(id))
 
@@ -101,7 +101,7 @@ func (s *session) handlePacket(ctx context.Context, pkt string) error {
 		s.svr.logger.Debugw("invalid frame",
 			"client_address", s.conn.RemoteAddr().String(),
 		)
-		return errEndOfService
+		return errInvalidRequest
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -202,7 +202,7 @@ func (s *session) login(ctx context.Context) error {
 			"client_address", s.conn.RemoteAddr().String(),
 			"version", versionStr,
 		)
-		return errEndOfService
+		return errInvalidRequest
 	}
 
 	if s.credential.CryptoMethod != 1 {
@@ -210,7 +210,7 @@ func (s *session) login(ctx context.Context) error {
 			"client_address", s.conn.RemoteAddr().String(),
 			"crypto_method", s.credential.CryptoMethod,
 		)
-		return errEndOfService
+		return errInvalidRequest
 	}
 
 	password, err := decryptedPassword(s.credential.Hash, s.salt)
@@ -219,7 +219,7 @@ func (s *session) login(ctx context.Context) error {
 			"error", err,
 			"client_address", s.conn.RemoteAddr().String(),
 		)
-		return errEndOfService
+		return errInvalidRequest
 	}
 
 	account, err := s.svr.dofus.AccountByName(ctx, s.credential.Username)
@@ -255,7 +255,7 @@ func (s *session) login(ctx context.Context) error {
 		s.svr.logger.Debugw("wrong password",
 			"client_address", s.conn.RemoteAddr().String(),
 		)
-		return errEndOfService
+		return errInvalidRequest
 	}
 
 	err = s.svr.controlAccount(account.Id, s)
@@ -267,7 +267,7 @@ func (s *session) login(ctx context.Context) error {
 			"error", err,
 			"client_address", s.conn.RemoteAddr().String(),
 		)
-		return errEndOfService
+		return errInvalidRequest
 	}
 	s.accountId = account.Id
 

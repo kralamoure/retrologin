@@ -143,7 +143,7 @@ func (s *Server) acceptLoop(ctx context.Context) error {
 				if !(isTimeout ||
 					errors.Is(err, io.EOF) ||
 					errors.Is(err, context.Canceled) ||
-					errors.Is(err, errEndOfService)) {
+					errors.Is(err, errInvalidRequest)) {
 					s.logger.Errorw(fmt.Errorf("error while handling client connection: %w", err).Error(),
 						"client_address", conn.RemoteAddr().String(),
 					)
