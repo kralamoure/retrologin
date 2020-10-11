@@ -61,7 +61,7 @@ func (s *session) receivePackets(ctx context.Context) error {
 		if pkt == "" {
 			continue
 		}
-		err = s.conn.SetDeadline(time.Now().UTC().Add(s.svr.connTimeout))
+		err = s.conn.SetReadDeadline(time.Now().UTC().Add(s.svr.connTimeout))
 		if err != nil {
 			return err
 		}

@@ -189,7 +189,7 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	if err != nil {
 		return err
 	}
-	err = conn.SetDeadline(time.Now().UTC().Add(s.connTimeout))
+	err = conn.SetReadDeadline(time.Now().UTC().Add(s.connTimeout))
 	if err != nil {
 		return err
 	}
