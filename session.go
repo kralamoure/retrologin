@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"time"
 
@@ -51,6 +52,9 @@ func (s *session) receivePackets(ctx context.Context) error {
 	for {
 		pkt, err := rd.ReadString('\x00')
 		if err != nil {
+			if errors.Is(err, os.ErrDeadlineExceeded) {
+				s.sendMessage(msgsvr.AksServerMessage{Value: "01"})
+			}
 			return err
 		}
 		err = lim.Wait(ctx)

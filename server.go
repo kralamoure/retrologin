@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"sort"
 	"sync"
 	"time"
@@ -135,15 +136,14 @@ func (s *Server) acceptLoop(ctx context.Context) error {
 			defer wg.Done()
 			err := s.handleClientConn(ctx, conn)
 			if err != nil {
-				var isTimeout bool
-				netErr, ok := err.(net.Error)
-				if ok {
-					isTimeout = netErr.Timeout()
-				}
-				if !(isTimeout ||
+				if errors.Is(err, os.ErrDeadlineExceeded) ||
 					errors.Is(err, io.EOF) ||
 					errors.Is(err, context.Canceled) ||
-					errors.Is(err, errInvalidRequest)) {
+					errors.Is(err, errInvalidRequest) {
+					s.logger.Debugw(fmt.Errorf("error while handling client connection: %w", err).Error(),
+						"client_address", conn.RemoteAddr().String(),
+					)
+				} else {
 					s.logger.Errorw(fmt.Errorf("error while handling client connection: %w", err).Error(),
 						"client_address", conn.RemoteAddr().String(),
 					)
