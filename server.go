@@ -217,6 +217,8 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	case err := <-errCh:
 		return err
 	case <-ctx.Done():
+		sess.sendMessage(msgsvr.AksServerMessage{Value: "04"})
+
 		return ctx.Err()
 	}
 }
