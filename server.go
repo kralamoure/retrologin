@@ -26,9 +26,10 @@ type Server struct {
 	dofus       *dofussvc.Service
 	d1          *d1svc.Service
 
-	mu       sync.Mutex
-	ln       *net.TCPListener
-	sessions map[*session]struct{}
+	mu                 sync.Mutex
+	ln                 *net.TCPListener
+	sessions           map[*session]struct{}
+	sessionByAccountId map[string]*session
 
 	hosts atomic.String
 }
@@ -102,6 +103,21 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	case err := <-errCh:
 		return err
 	}
+}
+
+func (s *Server) controlAccount(accountId string, sess *session) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	currentSess, ok := s.sessionByAccountId[accountId]
+	if ok {
+		currentSess.conn.Close()
+		return errors.New("already logged in")
+	}
+
+	s.sessionByAccountId[accountId] = sess
+
+	return nil
 }
 
 func (s *Server) acceptLoop(ctx context.Context) error {
@@ -298,11 +314,9 @@ func (s *Server) trackSession(sess *session, add bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if add {
-		if s.sessions == nil {
-			s.sessions = make(map[*session]struct{})
-		}
 		s.sessions[sess] = struct{}{}
 	} else {
+		delete(s.sessionByAccountId, sess.accountId)
 		delete(s.sessions, sess)
 	}
 }
