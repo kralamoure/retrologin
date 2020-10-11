@@ -313,6 +313,7 @@ func (s *Server) deleteOldTickets(ctx context.Context) (count int, err error) {
 func (s *Server) trackSession(sess *session, add bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if add {
 		s.sessions[sess] = struct{}{}
 	} else {
