@@ -10,8 +10,6 @@ import (
 	"github.com/kralamoure/dofus/dofussvc"
 )
 
-const Version = "v0.19.0"
-
 type Config struct {
 	Addr        string
 	ConnTimeout time.Duration

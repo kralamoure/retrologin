@@ -31,7 +31,6 @@ const (
 
 var (
 	printHelp    bool
-	printVersion bool
 	debug        bool
 	serverAddr   string
 	connTimeout  time.Duration
@@ -55,10 +54,6 @@ func main() {
 
 	if printHelp {
 		fmt.Println(help(flagSet.FlagUsages()))
-		return
-	}
-	if printVersion {
-		fmt.Println(d1login.Version)
 		return
 	}
 
@@ -200,7 +195,6 @@ func help(flagUsages string) string {
 func initFlagSet() {
 	flagSet = pflag.NewFlagSet("d1login", pflag.ContinueOnError)
 	flagSet.BoolVarP(&printHelp, "help", "h", false, "Print usage information")
-	flagSet.BoolVarP(&printVersion, "version", "v", false, "Print version")
 	flagSet.BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
 	flagSet.StringVarP(&serverAddr, "address", "a", "0.0.0.0:5555", "Server listener address")
 	flagSet.StringVarP(&pgConnString, "postgres", "p", "postgresql://user:password@host/database", "PostgreSQL connection string")
