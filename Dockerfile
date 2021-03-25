@@ -1,12 +1,12 @@
-FROM golang:1.15.2-buster AS builder
+FROM golang:1.16.2-buster AS builder
 
-RUN apk add git
 RUN git config --global credential.helper store
 COPY .git-credentials /root/.git-credentials
 
 WORKDIR /app
 COPY . .
 
+RUN go env -w GOPRIVATE=github.com/kralamoure
 RUN go install -v ./...
 
 FROM ubuntu:20.04
