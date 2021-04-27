@@ -96,12 +96,8 @@ func run() error {
 		defer trace.Stop()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
-	defer signal.Stop(sigCh)
 
 	cfg, err := pgxpool.ParseConfig(pgConnString)
 	if err != nil {
@@ -169,11 +165,6 @@ func run() error {
 
 	var selErr error
 	select {
-	case sig := <-sigCh:
-		signal.Stop(sigCh)
-		logger.Infow("received signal",
-			"signal", sig.String(),
-		)
 	case err := <-errCh:
 		selErr = err
 	case <-ctx.Done():
