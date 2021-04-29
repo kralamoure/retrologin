@@ -1,6 +1,6 @@
 # d1login
 
-`d1login` is a login server for Dofus 1.
+`d1login` implements a login server for Dofus 1.
 
 ## Requirements
 

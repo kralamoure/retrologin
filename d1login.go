@@ -1,3 +1,4 @@
+// Package d1login implements a login server for Dofus 1.
 package d1login
 
 import (
