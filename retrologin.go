@@ -1,14 +1,14 @@
-// Package d1login implements a login server for Dofus 1.
-package d1login
+// Package retrologin implements a login server for Dofus Retro.
+package retrologin
 
 import (
 	"errors"
 	"net"
 	"time"
 
-	"github.com/happybydefault/logger"
-	"github.com/kralamoure/d1/d1svc"
+	"github.com/happybydefault/logging"
 	"github.com/kralamoure/dofus/dofussvc"
+	"github.com/kralamoure/retro/retrosvc"
 )
 
 type Config struct {
@@ -16,8 +16,8 @@ type Config struct {
 	ConnTimeout time.Duration
 	TicketDur   time.Duration
 	Dofus       *dofussvc.Service
-	D1          *d1svc.Service
-	Logger      logger.Logger
+	Retro       *retrosvc.Service
+	Logger      logging.Logger
 }
 
 func NewServer(c Config) (*Server, error) {
@@ -30,11 +30,11 @@ func NewServer(c Config) (*Server, error) {
 	if c.Dofus == nil {
 		return nil, errors.New("nil dofus service")
 	}
-	if c.D1 == nil {
-		return nil, errors.New("nil d1 service")
+	if c.Retro == nil {
+		return nil, errors.New("nil retro service")
 	}
 	if c.Logger == nil {
-		c.Logger = logger.Noop{}
+		c.Logger = logging.Noop{}
 	}
 	addr, err := net.ResolveTCPAddr("tcp4", c.Addr)
 	if err != nil {
@@ -46,7 +46,7 @@ func NewServer(c Config) (*Server, error) {
 		connTimeout:        c.ConnTimeout,
 		ticketDur:          c.TicketDur,
 		dofus:              c.Dofus,
-		d1:                 c.D1,
+		retro:              c.Retro,
 		sessions:           make(map[*session]struct{}),
 		sessionByAccountId: make(map[string]*session),
 	}

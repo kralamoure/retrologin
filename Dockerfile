@@ -7,11 +7,11 @@ RUN go install -v ./...
 
 FROM ubuntu:20.04
 
-LABEL org.opencontainers.image.source="https://github.com/kralamoure/d1login"
+LABEL org.opencontainers.image.source="https://github.com/kralamoure/retrologin"
 
 RUN apt update && apt upgrade -y
 
 WORKDIR /app
 COPY --from=builder /go/bin/ .
 
-ENTRYPOINT ["./d1login"]
+ENTRYPOINT ["./retrologin"]

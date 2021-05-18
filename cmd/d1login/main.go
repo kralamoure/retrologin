@@ -11,22 +11,23 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/happybydefault/logging"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/kralamoure/d1/d1svc"
-	"github.com/kralamoure/d1pg"
 	"github.com/kralamoure/dofus/dofussvc"
 	"github.com/kralamoure/dofuspg"
+	"github.com/kralamoure/retro/retrosvc"
+	"github.com/kralamoure/retropg"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 	"go.uber.org/zap/buffer"
 
-	"github.com/kralamoure/d1login"
+	"github.com/kralamoure/retrologin"
 )
 
 const (
-	programName        = "d1login"
-	programDescription = "d1login is a login server for Dofus 1."
-	programMoreInfo    = "https://github.com/kralamoure/d1login"
+	programName        = "retrologin"
+	programDescription = "retrologin is a login server for Dofus Retro."
+	programMoreInfo    = "https://github.com/kralamoure/retrologin"
 )
 
 var (
@@ -109,38 +110,34 @@ func run() error {
 	}
 	defer pool.Close()
 
-	dofusRepo, err := dofuspg.NewRepo(pool)
+	dofusDb, err := dofuspg.NewDb(pool)
 	if err != nil {
 		return err
 	}
 
-	d1Repo, err := d1pg.NewRepo(pool)
+	retroDb, err := retropg.NewDb(pool)
 	if err != nil {
 		return err
 	}
 
-	dofusSvc, err := dofussvc.NewService(dofussvc.Config{
-		Repo:   dofusRepo,
-		Logger: logger.Named("dofussvc"),
+	dofusSvc, err := dofussvc.NewService(dofusDb)
+	if err != nil {
+		return err
+	}
+
+	retroSvc, err := retrosvc.NewService(retrosvc.Config{
+		Storer: retroDb,
 	})
 	if err != nil {
 		return err
 	}
 
-	d1Svc, err := d1svc.NewService(d1svc.Config{
-		Repo:   d1Repo,
-		Logger: logger.Named("d1svc"),
-	})
-	if err != nil {
-		return err
-	}
-
-	svr, err := d1login.NewServer(d1login.Config{
+	svr, err := retrologin.NewServer(retrologin.Config{
 		Addr:        serverAddr,
 		ConnTimeout: connTimeout,
 		Dofus:       dofusSvc,
-		D1:          d1Svc,
-		Logger:      logger.Named("server"),
+		Retro:       retroSvc,
+		Logger:      logging.Named("server", logger),
 	})
 	if err != nil {
 		return err
@@ -184,7 +181,7 @@ func help(flagUsages string) string {
 }
 
 func initFlagSet() {
-	flagSet = pflag.NewFlagSet("d1login", pflag.ContinueOnError)
+	flagSet = pflag.NewFlagSet("retrologin", pflag.ContinueOnError)
 	flagSet.BoolVarP(&printHelp, "help", "h", false, "Print usage information")
 	flagSet.BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
 	flagSet.StringVarP(&serverAddr, "address", "a", "0.0.0.0:5555", "Server listener address")

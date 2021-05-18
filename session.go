@@ -1,4 +1,4 @@
-package d1login
+package retrologin
 
 import (
 	"bufio"
@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/alexedwards/argon2id"
-	"github.com/kralamoure/d1proto"
-	"github.com/kralamoure/d1proto/enum"
-	"github.com/kralamoure/d1proto/msgcli"
-	"github.com/kralamoure/d1proto/msgsvr"
+	"github.com/kralamoure/retroproto"
+	"github.com/kralamoure/retroproto/enum"
+	"github.com/kralamoure/retroproto/msgcli"
+	"github.com/kralamoure/retroproto/msgsvr"
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
 )
@@ -41,7 +41,7 @@ type session struct {
 }
 
 type msgOut interface {
-	ProtocolId() (id d1proto.MsgSvrId)
+	ProtocolId() (id retroproto.MsgSvrId)
 	Serialized() (extra string, err error)
 }
 
@@ -86,8 +86,8 @@ func (s *session) handlePacket(ctx context.Context, pkt string) error {
 		}
 	}()
 
-	id, ok := d1proto.MsgCliIdByPkt(pkt)
-	name, _ := d1proto.MsgCliNameByID(id)
+	id, ok := retroproto.MsgCliIdByPkt(pkt)
+	name, _ := retroproto.MsgCliNameByID(id)
 	s.svr.logger.Infow("received packet from client",
 		"client_address", s.conn.RemoteAddr().String(),
 		"message_name", name,
@@ -112,7 +112,7 @@ func (s *session) handlePacket(ctx context.Context, pkt string) error {
 	defer cancel()
 
 	switch id {
-	case d1proto.AccountVersion:
+	case retroproto.AccountVersion:
 		msg := msgcli.AccountVersion{}
 		err := msg.Deserialize(extra)
 		if err != nil {
@@ -122,7 +122,7 @@ func (s *session) handlePacket(ctx context.Context, pkt string) error {
 		if err != nil {
 			return err
 		}
-	case d1proto.AccountCredential:
+	case retroproto.AccountCredential:
 		msg := msgcli.AccountCredential{}
 		err := msg.Deserialize(extra)
 		if err != nil {
@@ -132,12 +132,12 @@ func (s *session) handlePacket(ctx context.Context, pkt string) error {
 		if err != nil {
 			return err
 		}
-	case d1proto.AccountQueuePosition:
+	case retroproto.AccountQueuePosition:
 		err := s.handleAccountQueuePosition(ctx)
 		if err != nil {
 			return err
 		}
-	case d1proto.AccountSearchForFriend:
+	case retroproto.AccountSearchForFriend:
 		msg := msgcli.AccountSearchForFriend{}
 		err := msg.Deserialize(extra)
 		if err != nil {
@@ -147,12 +147,12 @@ func (s *session) handlePacket(ctx context.Context, pkt string) error {
 		if err != nil {
 			return err
 		}
-	case d1proto.AccountGetServersList:
+	case retroproto.AccountGetServersList:
 		err := s.handleAccountGetServersList(ctx)
 		if err != nil {
 			return err
 		}
-	case d1proto.AccountSetServer:
+	case retroproto.AccountSetServer:
 		msg := msgcli.AccountSetServer{}
 		err := msg.Deserialize(extra)
 		if err != nil {
@@ -169,23 +169,23 @@ func (s *session) handlePacket(ctx context.Context, pkt string) error {
 	return nil
 }
 
-func (s *session) frameMessage(id d1proto.MsgCliId) bool {
+func (s *session) frameMessage(id retroproto.MsgCliId) bool {
 	status := s.status.Load()
 	switch status {
 	case statusExpectingAccountVersion:
-		if id != d1proto.AccountVersion {
+		if id != retroproto.AccountVersion {
 			return false
 		}
 	case statusExpectingAccountCredential:
-		if id != d1proto.AccountCredential {
+		if id != retroproto.AccountCredential {
 			return false
 		}
 	case statusExpectingAccountQueuePosition:
-		if id != d1proto.AccountQueuePosition {
+		if id != retroproto.AccountQueuePosition {
 			return false
 		}
 	case statusIdle:
-		if id == d1proto.AccountVersion || id == d1proto.AccountCredential {
+		if id == retroproto.AccountVersion || id == retroproto.AccountCredential {
 			return false
 		}
 	}
@@ -231,7 +231,7 @@ func (s *session) login(ctx context.Context) error {
 		s.sendMessage(msgsvr.AccountLoginError{
 			Reason: enum.AccountLoginErrorReason.AccessDenied,
 		})
-		if errors.Is(err, d1proto.ErrNotFound) {
+		if errors.Is(err, retroproto.ErrNotFound) {
 			s.svr.logger.Debugw("could not find account",
 				"error", err,
 				"client_address", s.conn.RemoteAddr().String(),
@@ -295,7 +295,7 @@ func (s *session) login(ctx context.Context) error {
 func (s *session) sendMessage(msg msgOut) {
 	pkt, err := msg.Serialized()
 	if err != nil {
-		name, _ := d1proto.MsgSvrNameByID(msg.ProtocolId())
+		name, _ := retroproto.MsgSvrNameByID(msg.ProtocolId())
 		s.svr.logger.Errorw("could not serialize message",
 			"name", name,
 		)
@@ -305,8 +305,8 @@ func (s *session) sendMessage(msg msgOut) {
 }
 
 func (s *session) sendPacket(pkt string) {
-	id, _ := d1proto.MsgSvrIdByPkt(pkt)
-	name, _ := d1proto.MsgSvrNameByID(id)
+	id, _ := retroproto.MsgSvrIdByPkt(pkt)
+	name, _ := retroproto.MsgSvrNameByID(id)
 	s.svr.logger.Infow("sent packet to client",
 		"client_address", s.conn.RemoteAddr().String(),
 		"message_name", name,

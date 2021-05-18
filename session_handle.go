@@ -1,15 +1,15 @@
-package d1login
+package retrologin
 
 import (
 	"context"
 	"errors"
 	"sort"
 
-	"github.com/kralamoure/d1"
-	"github.com/kralamoure/d1proto/msgcli"
-	"github.com/kralamoure/d1proto/msgsvr"
-	prototyp "github.com/kralamoure/d1proto/typ"
 	"github.com/kralamoure/dofus"
+	"github.com/kralamoure/retro"
+	"github.com/kralamoure/retroproto/msgcli"
+	"github.com/kralamoure/retroproto/msgsvr"
+	prototyp "github.com/kralamoure/retroproto/typ"
 )
 
 func (s *session) handleAccountVersion(m msgcli.AccountVersion) error {
@@ -59,7 +59,7 @@ func (s *session) handleAccountSearchForFriend(ctx context.Context, m msgcli.Acc
 	serverIdQty := make(map[int]int)
 
 	for _, account := range accounts {
-		characters, err := s.svr.d1.AllCharactersByAccountId(ctx, account.Id)
+		characters, err := s.svr.retro.AllCharactersByAccountId(ctx, account.Id)
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ func (s *session) handleAccountGetServersList(ctx context.Context) error {
 
 	serverIdQty := make(map[int]int)
 
-	characters, err := s.svr.d1.AllCharactersByAccountId(ctx, s.accountId)
+	characters, err := s.svr.retro.AllCharactersByAccountId(ctx, s.accountId)
 	if err != nil {
 		return err
 	}
@@ -118,12 +118,12 @@ func (s *session) handleAccountGetServersList(ctx context.Context) error {
 }
 
 func (s *session) handleAccountSetServer(ctx context.Context, m msgcli.AccountSetServer) error {
-	gameServer, err := s.svr.d1.GameServer(ctx, m.Id)
+	gameServer, err := s.svr.retro.GameServer(ctx, m.Id)
 	if err != nil {
 		return err
 	}
 
-	id, err := s.svr.d1.CreateTicket(ctx, d1.Ticket{
+	id, err := s.svr.retro.CreateTicket(ctx, retro.Ticket{
 		AccountId:    s.accountId,
 		GameServerId: m.Id,
 	})

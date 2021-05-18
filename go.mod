@@ -1,20 +1,20 @@
-module github.com/kralamoure/d1login
+module github.com/kralamoure/retrologin
 
 go 1.16
 
 require (
-	github.com/alexedwards/argon2id v0.0.0-20210326052512-e2135f7c9c77
-	github.com/happybydefault/logger v1.1.0
+	github.com/alexedwards/argon2id v0.0.0-20210511081203-7d35d68092b8
+	github.com/happybydefault/logging v0.0.0-20210507180050-0f3842239c0e
 	github.com/jackc/pgx/v4 v4.11.0
-	github.com/kralamoure/d1 v0.0.0-20210429214140-311f664cc574
-	github.com/kralamoure/d1pg v0.0.0-20210429214251-99f0efbd03ef
-	github.com/kralamoure/d1proto v0.0.0-20210429214219-2bb2fe67cc88
-	github.com/kralamoure/dofus v0.0.0-20210428040024-ff9778389468
-	github.com/kralamoure/dofuspg v0.0.0-20210429203416-632faf698b2a
+	github.com/kralamoure/dofus v0.0.0-20210518144341-d3028d888930
+	github.com/kralamoure/dofuspg v0.0.0-20210518145043-588c0a43fff7
+	github.com/kralamoure/retro v0.0.0-20210518143642-3f411d09afcf
+	github.com/kralamoure/retropg v0.0.0-20210518153705-47d908b59963
+	github.com/kralamoure/retroproto v0.0.0-20210518145930-3b4548159c85
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/pflag v1.0.5
 	go.uber.org/atomic v1.7.0
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba

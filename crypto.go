@@ -1,4 +1,4 @@
-package d1login
+package retrologin
 
 import (
 	crand "crypto/rand"

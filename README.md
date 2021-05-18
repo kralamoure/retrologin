@@ -1,6 +1,6 @@
-# d1login
+# retrologin
 
-`d1login` is a login server for Dofus 1.
+`retrologin` is a login server for Dofus Retro.
 
 ## Requirements
 
@@ -10,29 +10,29 @@
 ## Build
 
 ```sh
-git clone https://github.com/kralamoure/d1login
-cd d1login
+git clone https://github.com/kralamoure/retrologin
+cd retrologin
 go build ./cmd/...
 ```
 
 ## Installation
 
 ```sh
-go get -u -v github.com/kralamoure/d1login/...
+go get -u -v github.com/kralamoure/retrologin/...
 ```
 
 ## Usage
 
 ```sh
-d1login --help
+retrologin --help
 ```
 
 ### Output
 
 ```text
-d1login is a login server for Dofus 1.
+retrologin is a login server for Dofus Retro.
 
-Find more information at: https://github.com/kralamoure/d1login
+Find more information at: https://github.com/kralamoure/retrologin
 
 Options:
   -h, --help               Print usage information
@@ -41,5 +41,5 @@ Options:
   -p, --postgres string    PostgreSQL connection string (default "postgresql://user:password@host/database")
   -t, --timeout duration   Connection timeout (default 30m0s)
 
-Usage: d1login [options]
+Usage: retrologin [options]
 ```

@@ -1,4 +1,4 @@
-package d1login
+package retrologin
 
 import (
 	"context"
@@ -11,21 +11,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/happybydefault/logger"
-	"github.com/kralamoure/d1/d1svc"
-	"github.com/kralamoure/d1proto/msgsvr"
-	"github.com/kralamoure/d1proto/typ"
+	"github.com/happybydefault/logging"
 	"github.com/kralamoure/dofus/dofussvc"
+	"github.com/kralamoure/retro/retrosvc"
+	"github.com/kralamoure/retroproto/msgsvr"
+	"github.com/kralamoure/retroproto/typ"
 	"go.uber.org/atomic"
 )
 
 type Server struct {
-	logger      logger.Logger
+	logger      logging.Logger
 	addr        *net.TCPAddr
 	connTimeout time.Duration
 	ticketDur   time.Duration
 	dofus       *dofussvc.Service
-	d1          *d1svc.Service
+	retro       *retrosvc.Service
 
 	mu                 sync.Mutex
 	ln                 *net.TCPListener
@@ -283,7 +283,7 @@ func (s *Server) sendUpdatedHosts(hosts msgsvr.AccountHosts) {
 }
 
 func (s *Server) fetchHosts(ctx context.Context) (string, error) {
-	gameServers, err := s.d1.GameServers(ctx)
+	gameServers, err := s.retro.GameServers(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -309,7 +309,7 @@ func (s *Server) fetchHosts(ctx context.Context) (string, error) {
 }
 
 func (s *Server) deleteOldTickets(ctx context.Context) (count int, err error) {
-	return s.d1.DeleteTickets(ctx, time.Now().UTC().Add(-s.ticketDur))
+	return s.retro.DeleteTickets(ctx, time.Now().UTC().Add(-s.ticketDur))
 }
 
 func (s *Server) trackSession(sess *session, add bool) {
