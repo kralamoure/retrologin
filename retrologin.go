@@ -1,4 +1,4 @@
-// Package retrologin implements a login server for Dofus Retro.
+// Package retrologin implements an unofficial login server for Dofus Retro.
 package retrologin
 
 import (

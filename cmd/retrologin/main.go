@@ -26,7 +26,7 @@ import (
 
 const (
 	programName        = "retrologin"
-	programDescription = "retrologin is a login server for Dofus Retro."
+	programDescription = "retrologin is an unofficial login server for Dofus Retro."
 	programMoreInfo    = "https://github.com/kralamoure/retrologin"
 )
 
