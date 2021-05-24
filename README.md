@@ -1,5 +1,7 @@
 # retrologin
 
+[![CI](https://github.com/kralamoure/retrologin/actions/workflows/ci.yml/badge.svg)](https://github.com/kralamoure/retrologin/actions/workflows/ci.yml)
+
 `retrologin` is a login server for Dofus Retro.
 
 ## Requirements
