@@ -70,14 +70,14 @@ func (s *session) receivePackets(ctx context.Context) error {
 			return err
 		}
 
-		err = s.handlePacket(ctx, pkt)
+		err = s.handlePacket(pkt)
 		if err != nil {
 			return err
 		}
 	}
 }
 
-func (s *session) handlePacket(ctx context.Context, pkt string) error {
+func (s *session) handlePacket(pkt string) error {
 	defer func() {
 		if r := recover(); r != nil {
 			s.svr.logger.Errorw("recovered from panic",
