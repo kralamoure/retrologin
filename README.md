@@ -4,11 +4,6 @@
 
 `retrologin` is an unofficial login server for Dofus Retro.
 
-## Requirements
-
-- [Git](https://git-scm.com/)
-- [Go](https://golang.org/)
-
 ## Build
 
 ```sh
@@ -20,7 +15,7 @@ go build ./cmd/...
 ## Installation
 
 ```sh
-go get -u -v github.com/kralamoure/retrologin/...
+go install github.com/kralamoure/retrologin/cmd/retrologin@latest
 ```
 
 ## Usage
