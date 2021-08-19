@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/kralamoure/retrologin/actions/workflows/ci.yml/badge.svg)](https://github.com/kralamoure/retrologin/actions/workflows/ci.yml)
 
-`retrologin` is an unofficial login server for Dofus Retro.
+`retrologin` is an unofficial login server of Dofus Retro.
 
 ## Build
 
