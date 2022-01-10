@@ -35,6 +35,7 @@ var (
 	debug        bool
 	serverAddr   string
 	connTimeout  time.Duration
+	ticketDur    time.Duration
 	pgConnString string
 )
 
@@ -135,6 +136,7 @@ func run() error {
 	svr, err := retrologin.NewServer(retrologin.Config{
 		Addr:        serverAddr,
 		ConnTimeout: connTimeout,
+		TicketDur:   ticketDur,
 		Dofus:       dofusSvc,
 		Retro:       retroSvc,
 		Logger:      logging.Named("server", logger),
@@ -187,5 +189,6 @@ func initFlagSet() {
 	flagSet.StringVarP(&serverAddr, "address", "a", "0.0.0.0:5555", "Server listener address")
 	flagSet.StringVarP(&pgConnString, "postgres", "p", "postgresql://user:password@host/database", "PostgreSQL connection string")
 	flagSet.DurationVarP(&connTimeout, "timeout", "t", 30*time.Minute, "Connection timeout")
+	flagSet.DurationVarP(&ticketDur, "ticket", "", 20*time.Second, "Ticket duration")
 	flagSet.SortFlags = false
 }
