@@ -189,9 +189,12 @@ func (s *Server) handleClientConn(ctx context.Context, conn *net.TCPConn) error 
 	if err != nil {
 		return err
 	}
-	err = conn.SetReadDeadline(time.Now().UTC().Add(s.connTimeout))
-	if err != nil {
-		return err
+
+	if s.connTimeout > 0 {
+		err = conn.SetReadDeadline(time.Now().UTC().Add(s.connTimeout))
+		if err != nil {
+			return err
+		}
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
