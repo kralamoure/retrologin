@@ -2,193 +2,89 @@ package main
 
 import (
 	"context"
+	"errors"
+	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
-	"runtime/trace"
-	"sync"
 	"syscall"
-	"time"
 
-	"github.com/happybydefault/logging"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/kralamoure/dofus/dofussvc"
-	"github.com/kralamoure/dofuspg"
-	"github.com/kralamoure/retro/retrosvc"
-	"github.com/kralamoure/retropg"
-	"github.com/spf13/pflag"
 	"go.uber.org/zap"
-	"go.uber.org/zap/buffer"
 
 	"github.com/kralamoure/retrologin"
 )
 
-const (
-	programName        = "retrologin"
-	programDescription = "retrologin is an unofficial login server for Dofus Retro."
-	programMoreInfo    = "https://github.com/kralamoure/retrologin"
-)
-
-var (
-	printHelp    bool
-	debug        bool
-	serverAddr   string
-	connTimeout  time.Duration
-	ticketDur    time.Duration
-	pgConnString string
-)
-
-var (
-	flagSet *pflag.FlagSet
-	logger  *zap.SugaredLogger
-)
-
 func main() {
-	l := log.New(os.Stderr, "", 0)
+	var development bool
+	var address string
 
-	initFlagSet()
-	err := flagSet.Parse(os.Args)
-	if err != nil {
-		l.Println(err)
-		os.Exit(2)
-	}
+	flag.BoolVar(&development, "d", false, "Enable development mode")
+	flag.StringVar(&address, "a", ":5555", "TCP address to listen at")
+	flag.Parse()
 
-	if printHelp {
-		fmt.Println(help(flagSet.FlagUsages()))
-		return
-	}
-
-	if debug {
-		tmp, err := zap.NewDevelopment()
-		if err != nil {
-			l.Println(err)
-			os.Exit(1)
-		}
-		logger = tmp.Sugar()
+	var logger *zap.SugaredLogger
+	if l, err := newLogger(development); err != nil {
+		log.Printf("could not create logger: %s", err)
 	} else {
-		tmp, err := zap.NewProduction()
-		if err != nil {
-			l.Println(err)
-			os.Exit(1)
-		}
-		logger = tmp.Sugar()
+		logger = l.Sugar()
 	}
-
-	err = run()
-	if err != nil {
-		logger.Error(err)
-		os.Exit(1)
-	}
-}
-
-func run() error {
 	defer logger.Sync()
 
-	if debug {
-		traceFile, err := os.Create("trace.out")
-		if err != nil {
-			return err
-		}
-		defer traceFile.Close()
-		err = trace.Start(traceFile)
-		if err != nil {
-			return err
-		}
-		defer trace.Stop()
-	}
-
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cfg, err := pgxpool.ParseConfig(pgConnString)
-	if err != nil {
-		return err
-	}
-	pool, err := pgxpool.ConnectConfig(ctx, cfg)
-	if err != nil {
-		return err
-	}
-	defer pool.Close()
-
-	dofusDb, err := dofuspg.NewDb(pool)
-	if err != nil {
-		return err
-	}
-
-	retroDb, err := retropg.NewDb(pool)
-	if err != nil {
-		return err
-	}
-
-	dofusSvc, err := dofussvc.NewService(dofusDb)
-	if err != nil {
-		return err
-	}
-
-	retroSvc, err := retrosvc.NewService(retrosvc.Config{
-		Storer: retroDb,
-	})
-	if err != nil {
-		return err
-	}
-
-	svr, err := retrologin.NewServer(retrologin.Config{
-		Addr:        serverAddr,
-		ConnTimeout: connTimeout,
-		TicketDur:   ticketDur,
-		Dofus:       dofusSvc,
-		Retro:       retroSvc,
-		Logger:      logging.Named("server", logger),
-	})
-	if err != nil {
-		return err
-	}
-
-	var wg sync.WaitGroup
-	defer wg.Wait()
-
-	errCh := make(chan error)
-
-	wg.Add(1)
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
 	go func() {
-		defer wg.Done()
-		err := svr.ListenAndServe(ctx)
-		if err != nil {
-			select {
-			case errCh <- fmt.Errorf("error while listening and serving: %w", err):
-			case <-ctx.Done():
-			}
-		}
+		sig := <-sigCh
+		signal.Stop(sigCh)
+		logger.Infof("signal received: %s", sig)
+		cancel()
 	}()
 
-	var selErr error
-	select {
-	case err := <-errCh:
-		selErr = err
-	case <-ctx.Done():
+	if err := serve(ctx, logger, address); err != nil {
+		logger.Error(err)
 	}
-	cancel()
-	return selErr
 }
 
-func help(flagUsages string) string {
-	buf := &buffer.Buffer{}
-	fmt.Fprintf(buf, "%s\n\n", programDescription)
-	fmt.Fprintf(buf, "Find more information at: %s\n\n", programMoreInfo)
-	fmt.Fprint(buf, "Options:\n")
-	fmt.Fprintf(buf, "%s\n", flagUsages)
-	fmt.Fprintf(buf, "Usage: %s [options]", programName)
-	return buf.String()
+func serve(ctx context.Context, logger *zap.SugaredLogger, address string) error {
+	addr, err := net.ResolveTCPAddr("tcp", address)
+	if err != nil {
+		return fmt.Errorf("could not parse address: %w", err)
+	}
+
+	listener, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("could not listen: %w", err)
+	}
+	logger.Infof("listening at %s", listener.Addr())
+
+	svr := retrologin.NewServer(logger)
+
+	if err = svr.Serve(ctx, listener); err != nil && !errors.Is(err, context.Canceled) {
+		return fmt.Errorf("error while serving: %w", err)
+	}
+
+	return nil
 }
 
-func initFlagSet() {
-	flagSet = pflag.NewFlagSet("retrologin", pflag.ContinueOnError)
-	flagSet.BoolVarP(&printHelp, "help", "h", false, "Print usage information")
-	flagSet.BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
-	flagSet.StringVarP(&serverAddr, "address", "a", "0.0.0.0:5555", "Server listener address")
-	flagSet.StringVarP(&pgConnString, "postgres", "p", "postgresql://user:password@host/database", "PostgreSQL connection string")
-	flagSet.DurationVarP(&connTimeout, "timeout", "t", 30*time.Minute, "Connection timeout")
-	flagSet.DurationVarP(&ticketDur, "ticket", "", 20*time.Second, "Ticket duration")
-	flagSet.SortFlags = false
+func newLogger(development bool) (*zap.Logger, error) {
+	var config zap.Config
+	if development {
+		config = zap.NewDevelopmentConfig()
+	} else {
+		config = zap.NewProductionConfig()
+	}
+
+	logger, err := config.Build()
+	if err != nil {
+		return nil, fmt.Errorf("could not build logger: %w", err)
+	}
+
+	return logger, nil
 }
